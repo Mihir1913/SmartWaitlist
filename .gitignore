@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# MongoDB data
+.mongodb-data/
+
+# Build output
+frontend/dist/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
