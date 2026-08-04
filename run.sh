@@ -1,15 +1,36 @@
 #!/bin/bash
+set -euo pipefail
+
 # Smart Waitlist - Start all services (cross-platform)
 # Usage: bash run.sh
 
 # Get the directory where this script lives
 PROJECT="$(cd "$(dirname "$0")" && pwd)"
+BACKEND_PID=""
+FRONTEND_PID=""
 
-# ── 1. Check / Start MongoDB ──────────────────────────────────
-if pgrep -x mongod > /dev/null 2>&1; then
-  echo "[1/3] MongoDB already running"
-else
-  # Try common mongod locations
+cleanup() {
+  if [ -n "$BACKEND_PID" ]; then
+    kill "$BACKEND_PID" 2>/dev/null || true
+  fi
+  if [ -n "$FRONTEND_PID" ]; then
+    kill "$FRONTEND_PID" 2>/dev/null || true
+  fi
+  echo "Servers stopped."
+}
+trap cleanup EXIT INT TERM
+
+start_mongodb() {
+  if command -v lsof >/dev/null 2>&1 && lsof -nP -iTCP:27017 -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "[1/3] MongoDB already listening on port 27017"
+    return 0
+  fi
+
+  if pgrep -x mongod > /dev/null 2>&1; then
+    echo "[1/3] MongoDB already running"
+    return 0
+  fi
+
   MONGO_CMD=""
   if command -v mongod &> /dev/null; then
     MONGO_CMD="mongod"
@@ -37,37 +58,97 @@ else
 
   echo "[1/3] Starting MongoDB..."
   mkdir -p "$PROJECT/.mongodb-data"
-  $MONGO_CMD --dbpath "$PROJECT/.mongodb-data" --port 27017 --fork --logpath "$PROJECT/.mongodb-data/mongod.log" 2>/dev/null
-  sleep 2
-  echo "  MongoDB started on port 27017"
-fi
-
-# ── 2. Seed Database ──────────────────────────────────────────
-echo "[2/4] Seeding database..."
-cd "$PROJECT/backend"
-npx tsx src/seed.ts 2>&1 | tail -1
-
-# ── 3. Start Backend ──────────────────────────────────────────
-echo "[3/4] Starting backend on port 3001..."
-cd "$PROJECT/backend"
-npx tsx src/index.ts &
-BACKEND_PID=$!
-
-for i in $(seq 1 15); do
-  if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
-    echo "  Backend ready (PID: $BACKEND_PID)"
-    break
+  if ! "$MONGO_CMD" --dbpath "$PROJECT/.mongodb-data" --port 27017 --fork --logpath "$PROJECT/.mongodb-data/mongod.log" 2>/dev/null; then
+    echo "  Failed to start MongoDB."
+    exit 1
   fi
-  sleep 1
-done
 
-# ── 4. Start Frontend ─────────────────────────────────────────
-echo "[4/4] Starting frontend on port 5173..."
-cd "$PROJECT/frontend"
-npx vite --host 0.0.0.0 --port 5173 &
-FRONTEND_PID=$!
-sleep 2
-echo "  Frontend ready (PID: $FRONTEND_PID)"
+  sleep 2
+  if ! pgrep -x mongod > /dev/null 2>&1; then
+    echo "  MongoDB failed to start."
+    exit 1
+  fi
+
+  echo "  MongoDB started on port 27017"
+}
+
+ensure_dependencies() {
+  if [ ! -d "$PROJECT/backend/node_modules" ] || [ ! -d "$PROJECT/frontend/node_modules" ]; then
+    echo "[2/4] Installing dependencies..."
+    npm install --prefix "$PROJECT/backend"
+    npm install --prefix "$PROJECT/frontend"
+  fi
+}
+
+seed_database() {
+  echo "[2/4] Seeding database..."
+  cd "$PROJECT/backend"
+  if [ -x "$PROJECT/backend/node_modules/.bin/tsx" ]; then
+    "$PROJECT/backend/node_modules/.bin/tsx" src/seed.ts
+  else
+    npx --yes tsx src/seed.ts
+  fi
+}
+
+start_backend() {
+  echo "[3/4] Starting backend on port 3001..."
+  cd "$PROJECT/backend"
+  if [ -x "$PROJECT/backend/node_modules/.bin/tsx" ]; then
+    "$PROJECT/backend/node_modules/.bin/tsx" src/index.ts &
+  else
+    npx --yes tsx src/index.ts &
+  fi
+  BACKEND_PID=$!
+
+  for i in $(seq 1 20); do
+    if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
+      echo "  Backend ready (PID: $BACKEND_PID)"
+      return 0
+    fi
+
+    if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+      echo "  Backend failed to start."
+      exit 1
+    fi
+    sleep 1
+  done
+
+  echo "  Backend did not become ready in time."
+  exit 1
+}
+
+start_frontend() {
+  echo "[4/4] Starting frontend on port 5173..."
+  cd "$PROJECT/frontend"
+  if [ -x "$PROJECT/frontend/node_modules/.bin/vite" ]; then
+    "$PROJECT/frontend/node_modules/.bin/vite" --host 0.0.0.0 --port 5173 &
+  else
+    npx --yes vite --host 0.0.0.0 --port 5173 &
+  fi
+  FRONTEND_PID=$!
+
+  for i in $(seq 1 20); do
+    if curl -sf http://localhost:5173 > /dev/null 2>&1; then
+      echo "  Frontend ready (PID: $FRONTEND_PID)"
+      return 0
+    fi
+
+    if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+      echo "  Frontend failed to start."
+      exit 1
+    fi
+    sleep 1
+  done
+
+  echo "  Frontend did not become ready in time."
+  exit 1
+}
+
+start_mongodb
+ensure_dependencies
+seed_database
+start_backend
+start_frontend
 
 echo ""
 echo "=================================================="
@@ -83,6 +164,4 @@ echo ""
 echo "  Customer: http://localhost:5173/join/spice-garden"
 echo "=================================================="
 
-trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; echo 'Servers stopped.'" EXIT INT TERM
-
-wait
+wait "$BACKEND_PID" "$FRONTEND_PID"

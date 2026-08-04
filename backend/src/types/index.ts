@@ -38,6 +38,7 @@ export interface IQueueEntry {
   onMyWayAt?: Date;
   seatedAt?: Date;
   assignedTableId?: mongoose.Types.ObjectId;
+  assignedTableIds?: mongoose.Types.ObjectId[];
   preOrderId?: mongoose.Types.ObjectId;
 }
 

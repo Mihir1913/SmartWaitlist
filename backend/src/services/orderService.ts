@@ -1,8 +1,9 @@
 import { Order } from '../models/Order.js';
 import { MenuItem } from '../models/Menu.js';
 import { QueueEntry } from '../models/QueueEntry.js';
-import { emitToRestaurant } from './socket.js';
+import { emitToRestaurant, emitRestaurantSync } from './socket.js';
 import { notifyOrderCooking } from './whatsappService.js';
+import { getRestaurantSyncState } from './syncService.js';
 
 export async function evaluateDualTrigger(orderId: string) {
   const order = await Order.findById(orderId);
@@ -16,8 +17,8 @@ export async function evaluateDualTrigger(orderId: string) {
     await order.save();
 
     emitToRestaurant(order.restaurantId.toString(), 'order:cooking', { order });
+    emitRestaurantSync(order.restaurantId.toString(), await getRestaurantSyncState(order.restaurantId.toString()));
 
-    // Notify customer via WhatsApp that cooking has started
     const entry = await QueueEntry.findById(order.queueEntryId);
     if (entry) {
       notifyOrderCooking(entry.customer.phone, entry.customer.name).catch((err) =>
@@ -80,6 +81,7 @@ export async function createPreOrder(
 
   await evaluateDualTrigger(order._id.toString());
   emitToRestaurant(entry.restaurantId.toString(), 'order:created', { order, entry });
+  emitRestaurantSync(entry.restaurantId.toString(), await getRestaurantSyncState(entry.restaurantId.toString()));
 
   return order;
 }
@@ -102,6 +104,7 @@ export async function startCooking(orderId: string) {
   await order.save();
 
   emitToRestaurant(order.restaurantId.toString(), 'order:cooking', { order });
+  emitRestaurantSync(order.restaurantId.toString(), await getRestaurantSyncState(order.restaurantId.toString()));
   return order;
 }
 
@@ -114,6 +117,7 @@ export async function markOrderReady(orderId: string) {
   await order.save();
 
   emitToRestaurant(order.restaurantId.toString(), 'order:ready', { order });
+  emitRestaurantSync(order.restaurantId.toString(), await getRestaurantSyncState(order.restaurantId.toString()));
   return order;
 }
 
@@ -133,5 +137,6 @@ export async function markOnMyWayForOrder(queueEntryId: string) {
   }
 
   emitToRestaurant(entry.restaurantId.toString(), 'queue:onMyWay', { entry });
+  emitRestaurantSync(entry.restaurantId.toString(), await getRestaurantSyncState(entry.restaurantId.toString()));
   return entry;
 }

@@ -1,13 +1,188 @@
 import { Table } from '../models/Table.js';
 import { QueueEntry } from '../models/QueueEntry.js';
 import { Order } from '../models/Order.js';
-import { emitToRestaurant } from './socket.js';
-import { getNextInQueue, recalculateQueuePositions } from './queueService.js';
+import { emitToRestaurant, emitRestaurantSync } from './socket.js';
+import { recalculateQueuePositions } from './queueService.js';
 import { evaluateDualTrigger } from './orderService.js';
 import { notifyTableReady } from './whatsappService.js';
+import { getRestaurantSyncState } from './syncService.js';
+
+const FREE_TABLE_STATUSES = ['available', 'ready'] as const;
+const MAX_TABLE_COMBINATION = 5;
 
 export async function getTables(restaurantId: string) {
   return Table.find({ restaurantId }).sort({ number: 1 });
+}
+
+function parseTableNumeric(numberStr: string) {
+  const digits = numberStr.match(/\d+/g);
+  if (!digits) return null;
+  return parseInt(digits.join(''), 10);
+}
+
+function adjacencyScore(tables: Array<InstanceType<typeof Table>>) {
+  const numericIds = tables
+    .map((table) => parseTableNumeric(table.number))
+    .filter((n): n is number => typeof n === 'number')
+    .sort((a, b) => a - b);
+
+  if (numericIds.length !== tables.length) return 0;
+  let score = 0;
+  for (let i = 1; i < numericIds.length; i += 1) {
+    if (numericIds[i] - numericIds[i - 1] === 1) score += 1;
+  }
+  return score;
+}
+
+function sortTableCombo(a: InstanceType<typeof Table>, b: InstanceType<typeof Table>) {
+  return b.capacity - a.capacity || a.number.localeCompare(b.number, undefined, { numeric: true });
+}
+
+type TableCombo = {
+  tables: Array<InstanceType<typeof Table>>;
+  totalCapacity: number;
+  adjacency: number;
+};
+
+function chooseBestCombination(
+  tables: Array<InstanceType<typeof Table>>,
+  partySize: number,
+): Array<InstanceType<typeof Table>> | null {
+  const sorted = tables.slice().sort(sortTableCombo);
+  let bestTables: Array<InstanceType<typeof Table>> | null = null;
+  let bestTotalCapacity = 0;
+  let bestAdjacency = 0;
+
+  function backtrack(start: number, current: Array<InstanceType<typeof Table>>, totalCapacity: number) {
+    if (totalCapacity >= partySize) {
+      const adjacency = adjacencyScore(current);
+      if (
+        !bestTables ||
+        current.length < bestTables.length ||
+        (current.length === bestTables.length && totalCapacity < bestTotalCapacity) ||
+        (current.length === bestTables.length && totalCapacity === bestTotalCapacity && adjacency > bestAdjacency)
+      ) {
+        bestTables = [...current];
+        bestTotalCapacity = totalCapacity;
+        bestAdjacency = adjacency;
+      }
+      return;
+    }
+
+    if (current.length >= MAX_TABLE_COMBINATION || start >= sorted.length) {
+      return;
+    }
+
+    for (let i = start; i < sorted.length; i += 1) {
+      const table = sorted[i];
+      current.push(table);
+      backtrack(i + 1, current, totalCapacity + table.capacity);
+      current.pop();
+    }
+  }
+
+  backtrack(0, [], 0);
+  return bestTables;
+}
+
+async function getFreeTables(restaurantId: string) {
+  return Table.find({
+    restaurantId,
+    status: { $in: [...FREE_TABLE_STATUSES] },
+    $or: [{ currentQueueEntryId: { $exists: false } }, { currentQueueEntryId: null }],
+  }).sort({ capacity: 1, number: 1 });
+}
+
+async function assignTablesToGuest(
+  entry: InstanceType<typeof QueueEntry>,
+  tables: Array<InstanceType<typeof Table>>,
+) {
+  const tableIds = tables.map((t) => t._id);
+
+  await QueueEntry.updateMany(
+    {
+      restaurantId: entry.restaurantId,
+      _id: { $ne: entry._id },
+      assignedTableIds: { $in: tableIds },
+    },
+    { $unset: { assignedTableIds: '' } }
+  );
+
+  await Table.updateMany(
+    {
+      restaurantId: entry.restaurantId,
+      currentQueueEntryId: entry._id,
+      _id: { $nin: tableIds },
+    },
+    { $unset: { currentQueueEntryId: '' } }
+  );
+
+  entry.status = 'notified';
+  entry.assignedTableIds = tableIds;
+  entry.assignedTableId = tableIds[0];
+  entry.notifiedAt = new Date();
+  await entry.save();
+
+  const updatePayload: Record<string, unknown> = { currentQueueEntryId: entry._id };
+  if (tableIds.length > 1) {
+    updatePayload.combinedGroupId = `group-${entry._id.toString()}`;
+  }
+
+  await Table.updateMany(
+    { _id: { $in: tableIds } },
+    updatePayload
+  );
+
+  if (entry.preOrderId) {
+    await Order.findByIdAndUpdate(entry.preOrderId, {
+      'triggers.tableReady': true,
+    });
+    await evaluateDualTrigger(entry.preOrderId.toString());
+  }
+
+  const tableSummary = tables.map((t) => ({ _id: t._id, number: t.number, capacity: t.capacity }));
+  emitToRestaurant(entry.restaurantId.toString(), 'queue:notified', { entry, tables: tableSummary });
+  notifyTableReady(
+    entry.customer.phone,
+    entry.customer.name,
+    tableSummary.map((t) => t.number).join(', ')
+  ).catch((err) => console.error('Failed to send table-ready WhatsApp notification:', err));
+
+  await recalculateQueuePositions(entry.restaurantId.toString());
+  emitRestaurantSync(entry.restaurantId.toString(), await getRestaurantSyncState(entry.restaurantId.toString()));
+
+  return entry;
+}
+
+export async function assignWaitingGuestsToFreeTables(restaurantId: string) {
+  const freeTables = await getFreeTables(restaurantId);
+  if (freeTables.length === 0) return [];
+
+  const waitingGuests = await QueueEntry.find({
+    restaurantId,
+    status: 'waiting',
+  }).sort({ joinedAt: 1 });
+
+  const assignedGuests: Array<InstanceType<typeof QueueEntry>> = [];
+  let availableTables = [...freeTables];
+
+  for (const guest of waitingGuests) {
+    const combo = chooseBestCombination(availableTables, guest.partySize);
+    if (!combo) continue;
+
+    await assignTablesToGuest(guest, combo);
+    assignedGuests.push(guest);
+    const usedIds = new Set(combo.map((table: InstanceType<typeof Table>) => table._id.toString()));
+    availableTables = availableTables.filter((table) => !usedIds.has(table._id.toString()));
+    if (availableTables.length === 0) break;
+  }
+
+  return assignedGuests;
+}
+
+export async function assignNextGuestToTable(table: InstanceType<typeof Table>) {
+  const assigned = await assignWaitingGuestsToFreeTables(table.restaurantId.toString());
+  return assigned.length > 0 ? assigned[0] : null;
 }
 
 export async function updateTableStatus(
@@ -22,51 +197,46 @@ export async function updateTableStatus(
   table.lastStatusChangeAt = new Date();
 
   if (status === 'ready') {
-    const nextGuest = await getNextInQueue(restaurantId);
-    if (nextGuest) {
-      nextGuest.status = 'notified';
-      nextGuest.notifiedAt = new Date();
-      nextGuest.assignedTableId = table._id;
-      await nextGuest.save();
-
-      table.currentQueueEntryId = nextGuest._id;
-
-      if (nextGuest.preOrderId) {
-        await Order.findByIdAndUpdate(nextGuest.preOrderId, {
-          'triggers.tableReady': true,
-        });
-        await evaluateDualTrigger(nextGuest.preOrderId.toString());
-      }
-
-      emitToRestaurant(restaurantId, 'queue:notified', {
-        entry: nextGuest,
-        table,
-      });
-
-      // Send WhatsApp notification that table is ready
-      notifyTableReady(nextGuest.customer.phone, nextGuest.customer.name, table.number).catch((err) =>
-        console.error('Failed to send table-ready WhatsApp notification:', err)
-      );
-    }
-  }
-
-  if (status === 'occupied' && table.currentQueueEntryId) {
-    const entry = await QueueEntry.findById(table.currentQueueEntryId);
-    if (entry) {
-      entry.status = 'seated';
-      entry.seatedAt = new Date();
-      await entry.save();
+    table.currentQueueEntryId = undefined;
+    await table.save();
+    const assignedGuest = await assignNextGuestToTable(table);
+    if (!assignedGuest) {
       await recalculateQueuePositions(restaurantId);
     }
-    table.currentQueueEntryId = undefined;
+    emitToRestaurant(restaurantId, 'table:statusChanged', { table });
+    emitRestaurantSync(restaurantId, await getRestaurantSyncState(restaurantId));
+    return table;
+  }
+
+  if (status === 'occupied') {
+    if (table.currentQueueEntryId) {
+      const entry = await QueueEntry.findById(table.currentQueueEntryId);
+      if (entry) {
+        entry.status = 'seated';
+        entry.seatedAt = new Date();
+        await entry.save();
+      }
+      table.currentQueueEntryId = undefined;
+    }
+    await table.save();
+    await recalculateQueuePositions(restaurantId);
+    emitToRestaurant(restaurantId, 'table:statusChanged', { table });
+    emitRestaurantSync(restaurantId, await getRestaurantSyncState(restaurantId));
+    return table;
   }
 
   if (status === 'cleaning') {
     table.currentQueueEntryId = undefined;
+    await table.save();
+    await recalculateQueuePositions(restaurantId);
+    emitToRestaurant(restaurantId, 'table:statusChanged', { table });
+    emitRestaurantSync(restaurantId, await getRestaurantSyncState(restaurantId));
+    return table;
   }
 
   await table.save();
   emitToRestaurant(restaurantId, 'table:statusChanged', { table });
+  emitRestaurantSync(restaurantId, await getRestaurantSyncState(restaurantId));
 
   return table;
 }
@@ -75,6 +245,25 @@ export async function assignTableToGuest(tableId: string, queueEntryId: string) 
   const table = await Table.findById(tableId);
   const entry = await QueueEntry.findById(queueEntryId);
   if (!table || !entry) throw new Error('Table or queue entry not found');
+
+  // ensure one guest, one table
+  await QueueEntry.updateMany(
+    {
+      restaurantId: table.restaurantId,
+      _id: { $ne: entry._id },
+      assignedTableId: entry.assignedTableId,
+    },
+    { $unset: { assignedTableId: '' } }
+  );
+
+  await Table.updateMany(
+    {
+      restaurantId: table.restaurantId,
+      _id: { $ne: table._id },
+      currentQueueEntryId: entry._id,
+    },
+    { $unset: { currentQueueEntryId: '' } }
+  );
 
   entry.assignedTableId = table._id;
   entry.status = 'notified';
@@ -85,5 +274,6 @@ export async function assignTableToGuest(tableId: string, queueEntryId: string) 
   await table.save();
 
   emitToRestaurant(table.restaurantId.toString(), 'queue:notified', { entry, table });
+  emitRestaurantSync(table.restaurantId.toString(), await getRestaurantSyncState(table.restaurantId.toString()));
   return { table, entry };
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Flame,
   CheckCircle2,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { useSocket } from '../hooks/useSocket';
+import { useRestaurantState } from '../hooks/useRestaurantState';
 import type { Order } from '../types';
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -303,14 +303,16 @@ export default function KitchenDisplay() {
     return () => clearInterval(id);
   }, []);
 
-  /* ── Query ──────────────────────────────────────────────────────── */
-  const { data, isLoading } = useQuery({
-    queryKey: ['kitchenOrders', user?.restaurantId],
-    queryFn: () => api.getKitchenOrders(user!.restaurantId),
-    enabled: !!user?.restaurantId,
+  const { state, isLoading } = useRestaurantState((event, data) => {
+    if (event === 'order:cooking' || event === 'order:ready') {
+      const payload = data as { order?: Order };
+      if (payload?.order) {
+        flash(payload.order._id, 'green');
+      }
+    }
   });
 
-  const orders: Order[] = data?.orders ?? [];
+  const orders: Order[] = state?.kitchenOrders ?? [];
 
   /* ── Detect new orders for flash ────────────────────────────────── */
   useEffect(() => {
@@ -326,37 +328,20 @@ export default function KitchenDisplay() {
   }, [orders, flash]);
 
   /* ── Socket ─────────────────────────────────────────────────────── */
-  const handleSocketEvent = useCallback(
-    (_event: string, data: unknown) => {
-      const d = data as Record<string, unknown> | undefined;
-      if (d?.orderId) {
-        // Flash green for cooking/ready transitions
-        if (
-          _event === 'order:cooking' ||
-          _event === 'order:ready'
-        ) {
-          flash(d.orderId as string, 'green');
-        }
-      }
-      queryClient.invalidateQueries({ queryKey: ['kitchenOrders', user?.restaurantId] });
-    },
-    [queryClient, user?.restaurantId, flash],
-  );
-
-  useSocket(user?.restaurantId, handleSocketEvent);
+  /* Real-time sync is handled by the shared restaurant state hook */
 
   /* ── Mutations ──────────────────────────────────────────────────── */
   const startCookingMutation = useMutation({
     mutationFn: (orderId: string) => api.startCooking(orderId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kitchenOrders', user?.restaurantId] });
+      queryClient.invalidateQueries({ queryKey: ['restaurantSync', user?.restaurantId] });
     },
   });
 
   const markReadyMutation = useMutation({
     mutationFn: (orderId: string) => api.markOrderReady(orderId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kitchenOrders', user?.restaurantId] });
+      queryClient.invalidateQueries({ queryKey: ['restaurantSync', user?.restaurantId] });
     },
   });
 

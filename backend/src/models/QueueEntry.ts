@@ -13,6 +13,7 @@ export interface IQueueEntryDoc extends Document {
   onMyWayAt?: Date;
   seatedAt?: Date;
   assignedTableId?: mongoose.Types.ObjectId;
+  assignedTableIds?: mongoose.Types.ObjectId[];
   preOrderId?: mongoose.Types.ObjectId;
 }
 
@@ -36,6 +37,7 @@ const queueEntrySchema = new Schema<IQueueEntryDoc>(
     onMyWayAt: Date,
     seatedAt: Date,
     assignedTableId: { type: Schema.Types.ObjectId, ref: 'Table' },
+    assignedTableIds: [{ type: Schema.Types.ObjectId, ref: 'Table' }],
     preOrderId: { type: Schema.Types.ObjectId, ref: 'Order' },
   },
   { timestamps: true }

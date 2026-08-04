@@ -23,6 +23,7 @@ export function useSocket(restaurantId: string | undefined, onEvent?: EventCallb
     });
 
     const events = [
+      'restaurant:sync',
       'queue:updated',
       'queue:joined',
       'queue:notified',

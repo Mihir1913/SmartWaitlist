@@ -6,6 +6,7 @@ import { Restaurant } from '../models/Restaurant.js';
 import { QueueEntry } from '../models/QueueEntry.js';
 import { notifyQueueJoined } from '../services/whatsappService.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { getRestaurantSyncState } from '../services/syncService.js';
 
 const router = Router();
 
@@ -83,6 +84,15 @@ router.patch('/:entryId/cancel', async (req, res) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to cancel';
     res.status(400).json({ error: message });
+  }
+});
+
+router.get('/sync/:restaurantId', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const state = await getRestaurantSyncState(req.params.restaurantId as string);
+    res.json({ state });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch sync state' });
   }
 });
 

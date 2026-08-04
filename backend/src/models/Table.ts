@@ -7,6 +7,7 @@ export interface ITableDoc extends Document {
   capacity: number;
   status: TableStatus;
   currentQueueEntryId?: mongoose.Types.ObjectId;
+  combinedGroupId?: string;
   lastStatusChangeAt: Date;
 }
 
@@ -21,6 +22,7 @@ const tableSchema = new Schema<ITableDoc>(
       default: 'available',
     },
     currentQueueEntryId: { type: Schema.Types.ObjectId, ref: 'QueueEntry' },
+    combinedGroupId: { type: String, default: undefined },
     lastStatusChangeAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

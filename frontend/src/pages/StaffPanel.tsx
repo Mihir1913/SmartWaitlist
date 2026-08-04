@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LogOut,
   Users,
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { useSocket } from '../hooks/useSocket';
+import { useRestaurantState } from '../hooks/useRestaurantState';
 import type { Table, QueueEntry } from '../types';
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -192,6 +192,7 @@ export default function StaffPanel() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { state, isLoading: stateLoading } = useRestaurantState();
 
   /* ── Clock ───────────────────────────────────────────────────────── */
   const [clock, setClock] = useState(new Date());
@@ -210,27 +211,10 @@ export default function StaffPanel() {
   /* ── Real-time flash counter ─────────────────────────────────────── */
   const [flashKey, setFlashKey] = useState(0);
 
-  /* ── Queries ─────────────────────────────────────────────────────── */
-  const {
-    data: tablesData,
-    isLoading: tablesLoading,
-  } = useQuery({
-    queryKey: ['tables', user?.restaurantId],
-    queryFn: () => api.getTables(user!.restaurantId),
-    enabled: !!user?.restaurantId,
-  });
-
-  const {
-    data: queueData,
-    isLoading: queueLoading,
-  } = useQuery({
-    queryKey: ['queue', user?.restaurantId],
-    queryFn: () => api.getQueue(user!.restaurantId),
-    enabled: !!user?.restaurantId,
-  });
-
-  const tables: Table[] = tablesData?.tables ?? [];
-  const queue: QueueEntry[] = queueData?.queue ?? [];
+  const tables: Table[] = state?.tables ?? [];
+  const queue: QueueEntry[] = state?.queue ?? [];
+  const tablesLoading = stateLoading;
+  const queueLoading = stateLoading;
 
   /* ── Derived ─────────────────────────────────────────────────────── */
   const activeQueue = useMemo(
@@ -258,8 +242,7 @@ export default function StaffPanel() {
     mutationFn: ({ tableId, status }: { tableId: string; status: 'occupied' | 'cleaning' | 'ready' }) =>
       api.updateTableStatus(tableId, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables', user!.restaurantId] });
-      queryClient.invalidateQueries({ queryKey: ['queue', user!.restaurantId] });
+      queryClient.invalidateQueries({ queryKey: ['restaurantSync', user!.restaurantId] });
     },
     onError: (err) => showToast(err instanceof Error ? err.message : 'Failed to update table'),
   });
@@ -267,32 +250,15 @@ export default function StaffPanel() {
   const cancelEntry = useMutation({
     mutationFn: (entryId: string) => api.cancelQueue(entryId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['queue', user!.restaurantId] });
-      queryClient.invalidateQueries({ queryKey: ['tables', user!.restaurantId] });
+      queryClient.invalidateQueries({ queryKey: ['restaurantSync', user!.restaurantId] });
     },
     onError: (err) => showToast(err instanceof Error ? err.message : 'Failed to cancel entry'),
   });
 
-  /* ── Socket ──────────────────────────────────────────────────────── */
-  const handleSocket = useCallback(
-    (event: string) => {
-      const relevant = [
-        'table:statusChanged',
-        'queue:updated',
-        'queue:joined',
-        'queue:notified',
-        'queue:onMyWay',
-      ];
-      if (relevant.includes(event)) {
-        queryClient.invalidateQueries({ queryKey: ['tables', user!.restaurantId] });
-        queryClient.invalidateQueries({ queryKey: ['queue', user!.restaurantId] });
-        setFlashKey((k) => k + 1);
-      }
-    },
-    [queryClient, user?.restaurantId],
-  );
-
-  useSocket(user?.restaurantId, handleSocket);
+  /* ── Sync refresh trigger ─────────────────────────────────────────── */
+  useEffect(() => {
+    setFlashKey((k) => k + 1);
+  }, [state]);
 
   /* ── Handlers ────────────────────────────────────────────────────── */
   const handleLogout = () => {

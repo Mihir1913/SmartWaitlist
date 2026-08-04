@@ -9,9 +9,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data;
+  const text = await res.text();
+
+  let data: any = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
+
+  if (!res.ok) {
+    const message = data?.error || data?.message || text || 'Request failed';
+    if (res.status === 429) {
+      throw new Error('Too many requests. Please wait a moment and try again.');
+    }
+    throw new Error(message);
+  }
+
+  return (data ?? {}) as T;
 }
 
 export const api = {
@@ -75,4 +92,12 @@ export const api = {
 
   getAnalytics: (restaurantId: string) =>
     request<{ stats: import('./types').DashboardStats }>(`/analytics/${restaurantId}`),
+
+  getSyncState: (restaurantId: string) =>
+    request<{ state: {
+      tables: import('./types').Table[];
+      queue: import('./types').QueueEntry[];
+      kitchenOrders: import('./types').Order[];
+      stats: import('./types').DashboardStats;
+    } }>(`/queue/sync/${restaurantId}`),
 };

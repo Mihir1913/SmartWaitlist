@@ -10,6 +10,18 @@ export function emitToRestaurant(restaurantId: string, event: string, data: unkn
   io?.to(`restaurant:${restaurantId}`).emit(event, data);
 }
 
+export function emitRestaurantSync(restaurantId: string, state: {
+  tables?: unknown;
+  queue?: unknown;
+  kitchenOrders?: unknown;
+  stats?: unknown;
+  queueEntry?: unknown;
+  order?: unknown;
+  table?: unknown;
+}) {
+  io?.to(`restaurant:${restaurantId}`).emit('restaurant:sync', { state });
+}
+
 export function getIO() {
   return io;
 }

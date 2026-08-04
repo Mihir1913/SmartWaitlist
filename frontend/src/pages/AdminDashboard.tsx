@@ -1,6 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Users,
@@ -18,8 +17,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useSocket } from '../hooks/useSocket';
-import { api } from '../lib/api';
+import { useRestaurantState } from '../hooks/useRestaurantState';
 import type { DashboardStats, QueueEntry, Table as Tbl } from '../types';
 
 type TabKey = 'overview' | 'queue' | 'tables';
@@ -67,40 +65,10 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<TabKey>('overview');
   const [queueFilter, setQueueFilter] = useState('all');
 
-  const queryClient = useQueryClient();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['analytics', user?.restaurantId],
-    queryFn: () => api.getAnalytics(user!.restaurantId),
-    enabled: !!user?.restaurantId,
-    refetchInterval: 30000,
-  });
-
-  const { data: tablesData } = useQuery({
-    queryKey: ['tables', user?.restaurantId],
-    queryFn: () => api.getTables(user!.restaurantId),
-    enabled: !!user?.restaurantId && tab === 'tables',
-  });
-
-  const handleSocketEvent = useCallback((event: string) => {
-    if (
-      event === 'queue:updated' ||
-      event === 'queue:joined' ||
-      event === 'queue:notified' ||
-      event === 'queue:onMyWay' ||
-      event === 'table:statusChanged' ||
-      event === 'order:created' ||
-      event === 'order:cooking' ||
-      event === 'order:ready'
-    ) {
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
-      if (tab === 'tables') queryClient.invalidateQueries({ queryKey: ['tables'] });
-    }
-  }, [queryClient, tab]);
-
-  useSocket(user?.restaurantId, handleSocketEvent);
-
-  const stats = (data as { stats: DashboardStats } | undefined)?.stats;
+  const { state, isLoading } = useRestaurantState();
+  const stats = state?.stats;
+  const queueEntries = state?.queue ?? [];
+  const tablesData = { tables: state?.tables ?? [] };
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',
     year: 'numeric',
@@ -120,10 +88,10 @@ export default function AdminDashboard() {
 
   // Filtered queue entries
   const filteredEntries = useMemo(() => {
-    if (!stats?.recentEntries) return [];
-    if (queueFilter === 'all') return stats.recentEntries;
-    return stats.recentEntries.filter((e: QueueEntry) => e.status === queueFilter);
-  }, [stats?.recentEntries, queueFilter]);
+    if (!queueEntries) return [];
+    if (queueFilter === 'all') return queueEntries;
+    return queueEntries.filter((e: QueueEntry) => e.status === queueFilter);
+  }, [queueEntries, queueFilter]);
 
   const tabs: { key: TabKey; label: string; icon: typeof BarChart3 }[] = [
     { key: 'overview', label: 'Overview', icon: BarChart3 },

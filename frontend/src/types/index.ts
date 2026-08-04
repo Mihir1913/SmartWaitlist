@@ -28,6 +28,7 @@ export interface QueueEntry {
   estimatedWaitMinutes: number;
   joinedAt: string;
   assignedTableId?: { number: string; status: string };
+  assignedTableIds?: { number: string; status: string }[];
   preOrderId?: Order;
 }
 
@@ -87,4 +88,11 @@ export interface DashboardStats {
     walkawayReduction: number;
     turnoverIncrease: number;
   };
+}
+
+export interface RestaurantSyncState {
+  tables: Table[];
+  queue: QueueEntry[];
+  kitchenOrders: Order[];
+  stats: DashboardStats;
 }
