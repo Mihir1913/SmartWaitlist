@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: smart-waitlist-backend
+    env: node
+    path: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    plan: free
+    envVars:
+      - key: MONGODB_URI
+        value: ""
+      - key: JWT_SECRET
+        value: ""
+      - key: FRONTEND_URL
+        value: ""
+      - key: WHATSAPP_PHONE
+        value: ""
+      - key: NODE_ENV
+        value: "production"
