@@ -1,9 +1,10 @@
 // User types
 export interface User {
   id: string;
-  email: string;
   name: string;
-  role: 'customer' | 'restaurant_staff' | 'admin';
+  email: string;
+  role: 'owner' | 'staff' | 'kitchen';
+  restaurantId: string;
 }
 
 // Restaurant types
@@ -11,74 +12,86 @@ export interface Restaurant {
   id: string;
   name: string;
   slug: string;
-  description?: string;
-  cuisine?: string;
-  address?: string;
-  phone?: string;
-  imageUrl?: string;
-  maxQueueSize?: number;
-  averageWaitTime?: number;
+  address: string;
+  settings: {
+    avgTurnoverMinutes: number;
+    maxQueueSize: number;
+    preOrderEnabled: boolean;
+  };
+  whatsappJoinUrl: string;
 }
 
 // Menu types
 export interface MenuItem {
-  id: string;
+  _id: string;
   name: string;
-  description?: string;
+  description: string;
   price: number;
-  imageUrl?: string;
+  isAvailable: boolean;
+  prepTimeMinutes: number;
 }
 
 export interface MenuCategory {
-  id: string;
+  _id: string;
   name: string;
   items: MenuItem[];
 }
 
 // Queue types
 export interface QueueEntry {
-  id: string;
-  restaurantId: string;
-  customerName: string;
-  customerPhone: string;
+  _id: string;
+  customer: { name: string; phone: string };
   partySize: number;
-  status: 'waiting' | 'on-my-way' | 'seated' | 'cancelled';
+  position: number;
+  status: 'waiting' | 'notified' | 'on_my_way' | 'seated' | 'cancelled' | 'no_show';
+  estimatedWaitMinutes: number;
   joinedAt: string;
-  estimatedWaitTime?: number;
-  tableId?: string;
+  assignedTableId?: { number: string; status: string };
+  preOrderId?: Order;
 }
 
 // Table types
 export interface Table {
-  id: string;
-  restaurantId: string;
-  tableNumber: number;
+  _id: string;
+  number: string;
   capacity: number;
-  status: 'ready' | 'occupied' | 'cleaning';
+  status: 'available' | 'occupied' | 'cleaning' | 'ready';
+  currentQueueEntryId?: string;
 }
 
 // Order types
 export interface Order {
-  id: string;
-  restaurantId: string;
-  queueEntryId: string;
-  items: {
-    menuItemId: string;
-    qty: number;
-    notes?: string;
-  }[];
-  status: 'pending' | 'cooking' | 'ready' | 'delivered' | 'cancelled';
-  totalPrice: number;
-  createdAt: string;
-  updatedAt: string;
+  _id: string;
+  queueEntryId: QueueEntry | string;
+  items: { name: string; qty: number; price: number; notes?: string }[];
+  subtotal: number;
+  gst: number;
+  total: number;
+  status: 'draft' | 'confirmed' | 'cooking' | 'ready' | 'served';
+  triggers: {
+    tableReady: boolean;
+    customerOnMyWay: boolean;
+    dualTriggerMetAt?: string;
+  };
+  cookingStartedAt?: string;
+  readyAt?: string;
 }
 
 // Analytics types
 export interface DashboardStats {
-  totalOrders: number;
-  totalRevenue: number;
-  averageOrderValue: number;
-  customersServed: number;
-  averageWaitTime: number;
-  peakHour: string;
+  activeQueue: number;
+  seatedToday: number;
+  cancelledToday: number;
+  walkawayRate: number;
+  ordersToday: number;
+  revenueToday: number;
+  tableStats: { total: number; ready: number; occupied: number };
+  recentEntries: QueueEntry[];
+  hourlyData: { _id: number; count: number }[];
+  kpis: {
+    extraCoversPerHour: number;
+    avgWaitReduction: number;
+    walkawayReduction: number;
+    turnoverIncrease: number;
+  };
 }
