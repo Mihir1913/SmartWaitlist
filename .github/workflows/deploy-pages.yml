@@ -18,6 +18,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,19 +32,15 @@ jobs:
           cache: 'npm'
 
       - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci
+        run: npm ci
 
       - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
+        run: npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'frontend/dist'
+          path: '/dist'
 
   deploy:
     runs-on: ubuntu-latest
