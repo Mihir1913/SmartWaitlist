@@ -55,19 +55,28 @@ const createStaffSchema = z.object({
 router.get('/:slug', async (req, res) => {
     try {
         const requestedSlug = (req.params.slug || '').trim();
+        const safeSlugRegex = requestedSlug.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+        // Tier 1: Case-insensitive slug match
         let restaurant = await Restaurant.findOne({
-            slug: { $regex: new RegExp(`^${requestedSlug}$`, 'i') },
+            slug: { $regex: new RegExp(`^${safeSlugRegex}$`, 'i') },
         });
+        // Tier 2: Match by restaurant name (e.g. 'spice-garden' -> 'Spice Garden')
         if (!restaurant) {
-            // Check if DB is empty of restaurants, run auto-seed if needed
-            const count = await Restaurant.countDocuments();
-            if (count === 0) {
-                console.log('[Auto-Seed] No restaurants found in DB on GET request. Auto-seeding...');
-                await runSeed(true);
-                restaurant = await Restaurant.findOne({
-                    slug: { $regex: new RegExp(`^${requestedSlug}$`, 'i') },
-                });
-            }
+            const formattedName = requestedSlug.replace(/-/g, ' ');
+            const safeNameRegex = formattedName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            restaurant = await Restaurant.findOne({
+                name: { $regex: new RegExp(`^${safeNameRegex}$`, 'i') },
+            });
+        }
+        // Tier 3: Fallback to the first existing restaurant in MongoDB
+        if (!restaurant) {
+            restaurant = await Restaurant.findOne();
+        }
+        // Tier 4: Auto-seed if database has 0 restaurants
+        if (!restaurant) {
+            console.log('[Auto-Seed] No restaurants found in DB. Triggering auto-seed...');
+            await runSeed(true);
+            restaurant = await Restaurant.findOne();
         }
         if (!restaurant)
             return res.status(404).json({ error: 'Restaurant not found' });
