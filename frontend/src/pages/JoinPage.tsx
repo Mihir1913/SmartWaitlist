@@ -45,6 +45,7 @@ export default function JoinPage() {
     try {
       const result = await api.joinQueue(slug!, { name, phone, partySize });
       setEntryId(result.entry._id);
+      localStorage.setItem('customer_queue_id', result.entry._id);
       if (restaurant?.settings.preOrderEnabled) {
         setStep('menu');
       } else {

@@ -29,6 +29,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/join/:slug" element={<JoinPage />} />
+      <Route path="/status" element={<CustomerStatus />} />
       <Route path="/status/:entryId" element={<CustomerStatus />} />
       <Route path="/login" element={<LoginPage />} />
       <Route

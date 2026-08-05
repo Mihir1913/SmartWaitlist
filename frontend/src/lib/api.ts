@@ -150,6 +150,23 @@ export const api = {
       method: 'POST',
     }),
 
+  getPublicRestaurants: () =>
+    request<{
+      restaurants: {
+        id: string;
+        name: string;
+        slug: string;
+        address: string;
+        whatsappPhone?: string;
+        description?: string;
+        openingHours?: string;
+        cuisine?: string;
+        activeQueueCount: number;
+        tableCount: number;
+      }[];
+      stats: { totalRestaurants: number; totalQueues: number; totalSeated: number };
+    }>('/restaurants/public/list'),
+
   getRestaurant: (slug: string) =>
     request<{ restaurant: import('./types').Restaurant; menu: import('./types').MenuCategory[] }>(
       `/restaurants/${slug}`

@@ -2,6 +2,8 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { Restaurant } from '../models/Restaurant.js';
+import { Table } from '../models/Table.js';
+import { QueueEntry } from '../models/QueueEntry.js';
 import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { User } from '../models/User.js';
 import { getWhatsAppJoinUrl } from '../services/whatsappService.js';
@@ -57,7 +59,53 @@ const createStaffSchema = z.object({
   role: z.enum(['staff', 'kitchen', 'owner']),
 });
 
-// --- PUBLIC ROUTE ---
+// --- PUBLIC ROUTES ---
+
+// GET /api/restaurants/public/list - Get public list of restaurants with live metrics for home page
+router.get('/public/list', async (req, res) => {
+  try {
+    const restaurants = await Restaurant.find().lean();
+    const result = await Promise.all(
+      restaurants.map(async (r) => {
+        const [activeQueueCount, tableCount] = await Promise.all([
+          QueueEntry.countDocuments({
+            restaurantId: r._id,
+            status: { $in: ['waiting', 'notified', 'on_my_way'] },
+          }),
+          Table.countDocuments({ restaurantId: r._id }),
+        ]);
+
+        return {
+          id: r._id,
+          name: r.name,
+          slug: r.slug,
+          address: r.address,
+          whatsappPhone: r.whatsappPhone,
+          description: r.description || '',
+          openingHours: r.openingHours || '11:00 AM - 11:00 PM',
+          cuisine: r.cuisine || 'Multi-Cuisine & Fine Dining',
+          activeQueueCount,
+          tableCount,
+        };
+      })
+    );
+
+    const totalQueues = await QueueEntry.countDocuments({ status: { $in: ['waiting', 'notified', 'on_my_way'] } });
+    const totalSeated = await QueueEntry.countDocuments({ status: 'seated' });
+
+    res.json({
+      restaurants: result,
+      stats: {
+        totalRestaurants: result.length,
+        totalQueues,
+        totalSeated,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch public restaurant list' });
+  }
+});
+
 // GET /api/restaurants/:slug
 router.get('/:slug', async (req, res) => {
   try {
