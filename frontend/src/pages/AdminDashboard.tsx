@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import QRCodeModal from '../components/QRCodeModal';
 import {
   Users,
   Clock,
@@ -26,6 +27,7 @@ import {
   AlertCircle,
   FolderPlus,
   Building,
+  QrCode,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRestaurantState } from '../hooks/useRestaurantState';
@@ -1388,6 +1390,7 @@ function ProfileTab() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     // Load initial from window or fetch
@@ -1439,6 +1442,38 @@ function ProfileTab() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {/* Official QR Standee Banner */}
+      <div className="bg-gradient-to-r from-orange-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+            <QrCode className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-extrabold font-display">Official Customer QR Standee</h3>
+            <p className="text-xs text-orange-100 mt-0.5">
+              Print or download your official QR Code standee to place on tables & entry counters.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowQR(true)}
+          className="bg-white text-orange-600 hover:bg-orange-50 font-bold px-5 py-2.5 rounded-xl shadow text-sm whitespace-nowrap transition transform active:scale-95 flex items-center gap-2"
+        >
+          <QrCode className="w-4 h-4" /> View & Print QR Standee
+        </button>
+      </div>
+
+      {showQR && (
+        <QRCodeModal
+          restaurantName={name || 'Spice Garden'}
+          slug="spice-garden"
+          address={address}
+          whatsappPhone={whatsappPhone}
+          onClose={() => setShowQR(false)}
+        />
+      )}
       {msg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center gap-2">
           <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />

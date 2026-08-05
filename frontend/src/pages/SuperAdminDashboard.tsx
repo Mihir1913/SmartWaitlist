@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import type { SuperAdminRestaurant, SuperAdminStats } from '../types';
+import QRCodeModal from '../components/QRCodeModal';
 import {
   Store,
   Plus,
@@ -23,6 +24,7 @@ import {
   Clock,
   Layers,
   Settings,
+  QrCode,
 } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
@@ -38,6 +40,7 @@ export default function SuperAdminDashboard() {
   const [editRestaurant, setEditRestaurant] = useState<SuperAdminRestaurant | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SuperAdminRestaurant | null>(null);
   const [addUserTarget, setAddUserTarget] = useState<SuperAdminRestaurant | null>(null);
+  const [qrTarget, setQrTarget] = useState<SuperAdminRestaurant | null>(null);
 
   // Form states - Create
   const [name, setName] = useState('');
@@ -107,7 +110,7 @@ export default function SuperAdminDashboard() {
     setSubmitting(true);
     setModalError('');
     try {
-      await api.createRestaurant({
+      const res = await api.createRestaurant({
         name,
         slug,
         address,
@@ -128,6 +131,23 @@ export default function SuperAdminDashboard() {
 
       setSuccessMsg(`Restaurant "${name}" created successfully!`);
       setShowAddModal(false);
+
+      if (res.restaurant) {
+        setQrTarget({
+          id: res.restaurant.id,
+          name: res.restaurant.name,
+          slug: res.restaurant.slug,
+          address: res.restaurant.address,
+          whatsappPhone: res.restaurant.whatsappPhone,
+          settings: res.restaurant.settings,
+          createdAt: new Date().toISOString(),
+          tableCount: 0,
+          activeQueueCount: 0,
+          usersCount: res.owner ? 1 : 0,
+          owners: res.owner ? [{ id: res.owner.id, name: res.owner.name, email: res.owner.email }] : [],
+        });
+      }
+
       resetCreateForm();
       fetchRestaurants();
       setTimeout(() => setSuccessMsg(''), 4000);
@@ -487,6 +507,14 @@ export default function SuperAdminDashboard() {
 
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setQrTarget(r)}
+                            className="p-2 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-orange-400 rounded-lg transition flex items-center gap-1.5 text-xs"
+                            title="View & Download QR Code"
+                          >
+                            <QrCode className="w-4 h-4 text-orange-400" />
+                            <span className="hidden md:inline font-medium">QR Code</span>
+                          </button>
                           <button
                             onClick={() => {
                               setAddUserTarget(r);
@@ -1020,6 +1048,17 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* QR CODE MODAL */}
+      {qrTarget && (
+        <QRCodeModal
+          restaurantName={qrTarget.name}
+          slug={qrTarget.slug}
+          address={qrTarget.address}
+          whatsappPhone={qrTarget.whatsappPhone}
+          onClose={() => setQrTarget(null)}
+        />
       )}
     </div>
   );
