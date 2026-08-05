@@ -4,6 +4,18 @@ import { Table } from '../models/Table.js';
 import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { User } from '../models/User.js';
 import { QueueEntry } from '../models/QueueEntry.js';
+import { Order } from '../models/Order.js';
+
+export async function clearDummyData() {
+  console.log('[Clear-Data] Wiping queue entries, orders, and resetting all tables to available...');
+  await Promise.all([
+    QueueEntry.deleteMany({}),
+    Order.deleteMany({}),
+    Table.updateMany({}, { status: 'available', $unset: { currentQueueEntryId: '', combinedGroupId: '' } }),
+  ]);
+  console.log('[Clear-Data] ✅ All dummy queue entries and orders cleared cleanly!');
+  return true;
+}
 
 export async function runSeed(force = false) {
   const userCount = await User.countDocuments();
@@ -12,24 +24,26 @@ export async function runSeed(force = false) {
     return false;
   }
 
-  console.log('[Auto-Seed] Seeding initial database records...');
+  console.log('[Auto-Seed] Seeding clean initial database records...');
 
-  if (force) {
-    await Promise.all([
-      Restaurant.deleteMany({}),
-      Table.deleteMany({}),
-      MenuCategory.deleteMany({}),
-      MenuItem.deleteMany({}),
-      User.deleteMany({}),
-      QueueEntry.deleteMany({}),
-    ]);
-  }
+  await Promise.all([
+    Restaurant.deleteMany({}),
+    Table.deleteMany({}),
+    MenuCategory.deleteMany({}),
+    MenuItem.deleteMany({}),
+    User.deleteMany({}),
+    QueueEntry.deleteMany({}),
+    Order.deleteMany({}),
+  ]);
 
   const restaurant = await Restaurant.create({
     name: 'Spice Garden',
     slug: 'spice-garden',
     address: '42 MG Road, Bangalore',
     whatsappPhone: '919876543210',
+    description: 'Authentic Indian Cuisine & Fine Dining Experience',
+    openingHours: '11:00 AM - 11:00 PM',
+    cuisine: 'North Indian & Mughlai',
     settings: {
       avgTurnoverMinutes: 45,
       maxQueueSize: 50,
@@ -37,13 +51,14 @@ export async function runSeed(force = false) {
     },
   });
 
+  // Create clean initial tables all in 'available' status
   const tables = [];
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 6; i++) {
     tables.push({
       restaurantId: restaurant._id,
       number: `T${i}`,
-      capacity: i <= 4 ? 2 : i <= 7 ? 4 : 6,
-      status: i <= 3 ? 'occupied' : i === 4 ? 'cleaning' : 'available',
+      capacity: i <= 2 ? 2 : i <= 4 ? 4 : 6,
+      status: 'available',
     });
   }
   await Table.insertMany(tables);
@@ -113,25 +128,6 @@ export async function runSeed(force = false) {
     },
   ]);
 
-  const sampleGuests = [
-    { name: 'Amit Patel', phone: '9876543210', partySize: 2 },
-    { name: 'Sneha Reddy', phone: '9876543211', partySize: 4 },
-    { name: 'Rahul Mehta', phone: '9876543212', partySize: 3 },
-    { name: 'Kavita Singh', phone: '9876543213', partySize: 2 },
-  ];
-
-  for (let i = 0; i < sampleGuests.length; i++) {
-    await QueueEntry.create({
-      restaurantId: restaurant._id,
-      customer: { name: sampleGuests[i].name, phone: sampleGuests[i].phone },
-      partySize: sampleGuests[i].partySize,
-      position: i + 1,
-      status: 'waiting',
-      estimatedWaitMinutes: 15 + i * 8,
-      joinedAt: new Date(Date.now() - (sampleGuests.length - i) * 600000),
-    });
-  }
-
-  console.log('[Auto-Seed] ✅ Seed completed successfully!');
+  console.log('[Auto-Seed] ✅ Clean database initialization complete! Zero dummy queue entries created.');
   return true;
 }

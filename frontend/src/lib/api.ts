@@ -145,6 +145,11 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
 
+  clearDummyData: () =>
+    request<{ message: string }>('/auth/clear-dummy', {
+      method: 'POST',
+    }),
+
   getRestaurant: (slug: string) =>
     request<{ restaurant: import('./types').Restaurant; menu: import('./types').MenuCategory[] }>(
       `/restaurants/${slug}`

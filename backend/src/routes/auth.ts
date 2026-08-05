@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { User } from '../models/User.js';
 import { config } from '../config/index.js';
-import { runSeed } from '../services/seedService.js';
+import { runSeed, clearDummyData } from '../services/seedService.js';
 
 const router = Router();
 
@@ -54,12 +54,23 @@ router.all('/seed', async (req, res) => {
     const force = req.query.force === 'true' || req.body?.force === true;
     const seeded = await runSeed(force);
     res.json({
-      message: seeded ? 'Database seeded successfully' : 'Database already seeded',
+      message: seeded ? 'Database seeded cleanly' : 'Database already seeded',
       seeded,
     });
   } catch (err) {
     console.error('Seed route error:', err);
     res.status(500).json({ error: 'Failed to seed database' });
+  }
+});
+
+// Endpoint to wipe dummy queue entries, orders, and reset table statuses
+router.all('/clear-dummy', async (req, res) => {
+  try {
+    await clearDummyData();
+    res.json({ message: 'All dummy waitlist entries and orders cleared cleanly!' });
+  } catch (err) {
+    console.error('Clear dummy route error:', err);
+    res.status(500).json({ error: 'Failed to clear dummy data' });
   }
 });
 

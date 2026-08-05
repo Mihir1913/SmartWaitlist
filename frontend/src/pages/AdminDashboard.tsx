@@ -152,11 +152,27 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-surface-900">{user?.name || 'Owner'}</p>
               <p className="text-xs text-stone-500">{user?.email}</p>
             </div>
+            <button
+              onClick={async () => {
+                if (confirm('Clear all dummy queue entries and reset tables to available?')) {
+                  try {
+                    await api.clearDummyData();
+                    window.location.reload();
+                  } catch (err) {
+                    alert('Failed to clear dummy data');
+                  }
+                }
+              }}
+              className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-semibold transition"
+              title="Clear sample waitlist data"
+            >
+              Clear Dummy Data
+            </button>
             <button onClick={logout} className="btn-ghost flex items-center gap-2 text-stone-600">
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Logout</span>
