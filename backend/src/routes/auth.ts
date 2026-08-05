@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { User } from '../models/User.js';
 import { config } from '../config/index.js';
+import { runSeed } from '../services/seedService.js';
 
 const router = Router();
 
@@ -15,7 +16,9 @@ const loginSchema = z.object({
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
-    const user = await User.findOne({ email });
+    
+    // Case-insensitive email lookup
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${email.trim()}$`, 'i') } });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
     const valid = await bcrypt.compare(password, user.password);
@@ -42,6 +45,21 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: err.errors });
     }
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Endpoint to trigger initial seed (useful for production deployment)
+router.all('/seed', async (req, res) => {
+  try {
+    const force = req.query.force === 'true' || req.body?.force === true;
+    const seeded = await runSeed(force);
+    res.json({
+      message: seeded ? 'Database seeded successfully' : 'Database already seeded',
+      seeded,
+    });
+  } catch (err) {
+    console.error('Seed route error:', err);
+    res.status(500).json({ error: 'Failed to seed database' });
   }
 });
 

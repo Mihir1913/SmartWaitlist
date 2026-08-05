@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { connectDB } from './config/db.js';
 import { setIO } from './services/socket.js';
+import { runSeed } from './services/seedService.js';
 
 import authRoutes from './routes/auth.js';
 import restaurantRoutes from './routes/restaurants.js';
@@ -60,6 +61,7 @@ app.use('/api/superadmin', superadminRoutes);
 
 async function start() {
   await connectDB();
+  await runSeed(false);
   httpServer.listen(config.port, () => {
     console.log(`Smart Waitlist API running on http://localhost:${config.port}`);
   });
