@@ -8,24 +8,20 @@
       // This script runs when GitHub Pages serves a 404 for any sub-path.
       // It saves the original URL to sessionStorage and redirects to the main app,
       // where index.html reads it back and restores the correct route.
-      var redirectUrl = window.location.href;
-      var base = '/SmartWaitlist';
-
-      // Extract just the path after the base
-      var pathAfterBase = window.location.pathname;
-      if (pathAfterBase.indexOf(base) === 0) {
-        pathAfterBase = pathAfterBase.substring(base.length);
-      }
-
-      // Save the full original URL for the app to recover
-      sessionStorage.redirect = redirectUrl;
-
-      // Redirect to the main app entry point
-      window.location.replace(
-        window.location.origin + base + '/' +
-        window.location.search +
-        window.location.hash
-      );
+      (function() {
+        var redirectUrl = window.location.href;
+        var base = '/SmartWaitlist';
+        
+        // Save the full original URL for the app to recover
+        sessionStorage.redirect = redirectUrl;
+        
+        // Redirect to the main app entry point, preserving query params and hash
+        var targetUrl = window.location.origin + base + '/' + 
+                        window.location.search + 
+                        window.location.hash;
+        
+        window.location.replace(targetUrl);
+      })();
     </script>
   </head>
   <body>
