@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 
 const roleRedirects: Record<string, string> = {
+  superadmin: '/superadmin',
   owner: '/admin',
   staff: '/staff',
   kitchen: '/kitchen',
@@ -34,6 +35,7 @@ export default function LoginPage() {
   };
 
   const demoAccounts = [
+    { email: 'admin@smartwaitlist.com', role: 'Main Admin → Platform Dashboard' },
     { email: 'owner@spicegarden.com', role: 'Owner → Admin Dashboard' },
     { email: 'staff@spicegarden.com', role: 'Staff → Table Panel' },
     { email: 'kitchen@spicegarden.com', role: 'Kitchen → Order Display' },

@@ -202,9 +202,58 @@ export const api = {
 
   getSyncState: (restaurantId: string) =>
     request<{ state: {
-      tables: import('./types').Table[];
-      queue: import('./types').QueueEntry[];
-      kitchenOrders: import('./types').Order[];
-      stats: import('./types').DashboardStats;
+      tables: import('../types').Table[];
+      queue: import('../types').QueueEntry[];
+      kitchenOrders: import('../types').Order[];
+      stats: import('../types').DashboardStats;
     } }>(`/queue/sync/${restaurantId}`),
+
+  // SuperAdmin APIs
+  getSuperAdminRestaurants: () =>
+    request<{
+      restaurants: import('../types').SuperAdminRestaurant[];
+      stats: import('../types').SuperAdminStats;
+    }>('/superadmin/restaurants'),
+
+  createRestaurant: (data: {
+    name: string;
+    slug: string;
+    address: string;
+    whatsappPhone: string;
+    settings?: { avgTurnoverMinutes?: number; maxQueueSize?: number; preOrderEnabled?: boolean };
+    owner?: { name: string; email: string; password: string };
+  }) =>
+    request<{ message: string; restaurant: any; owner: any }>('/superadmin/restaurants', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateRestaurant: (
+    id: string,
+    data: {
+      name?: string;
+      slug?: string;
+      address?: string;
+      whatsappPhone?: string;
+      settings?: { avgTurnoverMinutes?: number; maxQueueSize?: number; preOrderEnabled?: boolean };
+    }
+  ) =>
+    request<{ message: string; restaurant: any }>(`/superadmin/restaurants/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteRestaurant: (id: string) =>
+    request<{ message: string }>(`/superadmin/restaurants/${id}`, {
+      method: 'DELETE',
+    }),
+
+  createRestaurantUser: (
+    restaurantId: string,
+    data: { name: string; email: string; password: string; role: 'owner' | 'staff' | 'kitchen' }
+  ) =>
+    request<{ message: string; user: any }>(`/superadmin/restaurants/${restaurantId}/users`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };

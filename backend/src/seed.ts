@@ -83,6 +83,12 @@ async function seed() {
   const hashedPassword = await bcrypt.hash('password123', 10);
   await User.insertMany([
     {
+      email: 'admin@smartwaitlist.com',
+      password: hashedPassword,
+      name: 'Main Platform Admin',
+      role: 'superadmin',
+    },
+    {
       restaurantId: restaurant._id,
       email: 'owner@spicegarden.com',
       password: hashedPassword,
@@ -127,9 +133,10 @@ async function seed() {
   console.log('\n✅ Seed completed!\n');
   console.log('Restaurant: Spice Garden (slug: spice-garden)');
   console.log('\nLogin credentials (password: password123):');
-  console.log('  Owner:   owner@spicegarden.com');
-  console.log('  Staff:   staff@spicegarden.com');
-  console.log('  Kitchen: kitchen@spicegarden.com');
+  console.log('  Main Admin: admin@smartwaitlist.com');
+  console.log('  Owner:      owner@spicegarden.com');
+  console.log('  Staff:      staff@spicegarden.com');
+  console.log('  Kitchen:    kitchen@spicegarden.com');
   console.log('\nCustomer join URL: http://localhost:5173/join/spice-garden\n');
 
   await mongoose.disconnect();

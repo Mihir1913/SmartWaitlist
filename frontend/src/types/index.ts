@@ -2,8 +2,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'owner' | 'staff' | 'kitchen';
-  restaurantId: string;
+  role: 'superadmin' | 'owner' | 'staff' | 'kitchen';
+  restaurantId?: string;
 }
 
 export interface Restaurant {
@@ -11,12 +11,39 @@ export interface Restaurant {
   name: string;
   slug: string;
   address: string;
+  whatsappPhone?: string;
   settings: {
     avgTurnoverMinutes: number;
     maxQueueSize: number;
     preOrderEnabled: boolean;
   };
   whatsappJoinUrl: string;
+}
+
+export interface SuperAdminRestaurant {
+  id: string;
+  name: string;
+  slug: string;
+  address: string;
+  whatsappPhone: string;
+  timezone?: string;
+  settings: {
+    avgTurnoverMinutes: number;
+    maxQueueSize: number;
+    preOrderEnabled: boolean;
+  };
+  createdAt: string;
+  tableCount: number;
+  activeQueueCount: number;
+  usersCount: number;
+  owners: { id: string; name: string; email: string }[];
+}
+
+export interface SuperAdminStats {
+  totalRestaurants: number;
+  totalActiveQueues: number;
+  totalTables: number;
+  totalUsers: number;
 }
 
 export interface QueueEntry {

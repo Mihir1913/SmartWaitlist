@@ -7,6 +7,7 @@ import StaffPanel from './pages/StaffPanel';
 import KitchenDisplay from './pages/KitchenDisplay';
 import AdminDashboard from './pages/AdminDashboard';
 import CustomerStatus from './pages/CustomerStatus';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 function ProtectedRoute({
   children,
@@ -30,6 +31,14 @@ export default function App() {
       <Route path="/join/:slug" element={<JoinPage />} />
       <Route path="/status/:entryId" element={<CustomerStatus />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/superadmin"
+        element={
+          <ProtectedRoute roles={['superadmin']}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/staff"
         element={
