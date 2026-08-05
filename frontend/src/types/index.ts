@@ -103,7 +103,7 @@ export interface Order {
   subtotal: number;
   gst: number;
   total: number;
-  status: 'draft' | 'confirmed' | 'cooking' | 'ready' | 'served';
+  status: 'draft' | 'confirmed' | 'cooking' | 'ready' | 'served' | 'completed';
   triggers: {
     tableReady: boolean;
     customerOnMyWay: boolean;
@@ -111,6 +111,7 @@ export interface Order {
   };
   cookingStartedAt?: string;
   readyAt?: string;
+  createdAt?: string;
 }
 
 export interface DashboardStats {
@@ -135,5 +136,6 @@ export interface RestaurantSyncState {
   tables: Table[];
   queue: QueueEntry[];
   kitchenOrders: Order[];
+  orders?: Order[];
   stats: DashboardStats;
 }

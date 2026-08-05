@@ -213,6 +213,12 @@ export const api = {
       method: 'PATCH',
     }),
 
+  updateOrderStatus: (orderId: string, status: 'confirmed' | 'cooking' | 'ready' | 'completed') =>
+    request<{ order: import('./types').Order }>(`/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+
   getAnalytics: (restaurantId: string) =>
     request<{ stats: import('./types').DashboardStats }>(`/analytics/${restaurantId}`),
 

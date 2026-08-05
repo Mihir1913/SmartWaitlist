@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getKitchenOrders, startCooking, markOrderReady, evaluateDualTrigger, } from '../services/orderService.js';
+import { getKitchenOrders, startCooking, markOrderReady, updateOrderStatus, evaluateDualTrigger, } from '../services/orderService.js';
 import { authMiddleware } from '../middleware/auth.js';
 const router = Router();
 router.get('/:restaurantId/kitchen', authMiddleware, async (req, res) => {
@@ -9,6 +9,20 @@ router.get('/:restaurantId/kitchen', authMiddleware, async (req, res) => {
     }
     catch {
         res.status(500).json({ error: 'Failed to fetch kitchen orders' });
+    }
+});
+router.patch('/:orderId/status', authMiddleware, async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!['confirmed', 'cooking', 'ready', 'completed'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid order status' });
+        }
+        const order = await updateOrderStatus(req.params.orderId, status);
+        res.json({ order });
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update order status';
+        res.status(400).json({ error: message });
     }
 });
 router.patch('/:orderId/start-cooking', authMiddleware, async (req, res) => {

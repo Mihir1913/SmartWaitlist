@@ -3,6 +3,7 @@ import {
   getKitchenOrders,
   startCooking,
   markOrderReady,
+  updateOrderStatus,
   evaluateDualTrigger,
 } from '../services/orderService.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -15,6 +16,20 @@ router.get('/:restaurantId/kitchen', authMiddleware, async (req, res) => {
     res.json({ orders });
   } catch {
     res.status(500).json({ error: 'Failed to fetch kitchen orders' });
+  }
+});
+
+router.patch('/:orderId/status', authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['confirmed', 'cooking', 'ready', 'completed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid order status' });
+    }
+    const order = await updateOrderStatus(req.params.orderId as string, status);
+    res.json({ order });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to update order status';
+    res.status(400).json({ error: message });
   }
 });
 

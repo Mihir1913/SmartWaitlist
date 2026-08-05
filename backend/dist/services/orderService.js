@@ -69,34 +69,38 @@ export async function createPreOrder(queueEntryId, items) {
     return order;
 }
 export async function getKitchenOrders(restaurantId) {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
     return Order.find({
         restaurantId,
-        status: { $in: ['confirmed', 'cooking', 'ready'] },
+        $or: [
+            { status: { $in: ['confirmed', 'cooking', 'ready'] } },
+            { status: 'completed', updatedAt: { $gte: twoHoursAgo } },
+        ],
     })
         .sort({ createdAt: 1 })
         .populate('queueEntryId', 'customer partySize position');
 }
-export async function startCooking(orderId) {
+export async function updateOrderStatus(orderId, newStatus) {
     const order = await Order.findById(orderId);
     if (!order)
         throw new Error('Order not found');
-    order.status = 'cooking';
-    order.cookingStartedAt = new Date();
+    order.status = newStatus;
+    if (newStatus === 'cooking' && !order.cookingStartedAt) {
+        order.cookingStartedAt = new Date();
+    }
+    else if (newStatus === 'ready' && !order.readyAt) {
+        order.readyAt = new Date();
+    }
     await order.save();
-    emitToRestaurant(order.restaurantId.toString(), 'order:cooking', { order });
+    emitToRestaurant(order.restaurantId.toString(), 'order:updated', { order, status: newStatus });
     emitRestaurantSync(order.restaurantId.toString(), await getRestaurantSyncState(order.restaurantId.toString()));
     return order;
 }
+export async function startCooking(orderId) {
+    return updateOrderStatus(orderId, 'cooking');
+}
 export async function markOrderReady(orderId) {
-    const order = await Order.findById(orderId);
-    if (!order)
-        throw new Error('Order not found');
-    order.status = 'ready';
-    order.readyAt = new Date();
-    await order.save();
-    emitToRestaurant(order.restaurantId.toString(), 'order:ready', { order });
-    emitRestaurantSync(order.restaurantId.toString(), await getRestaurantSyncState(order.restaurantId.toString()));
-    return order;
+    return updateOrderStatus(orderId, 'ready');
 }
 export async function markOnMyWayForOrder(queueEntryId) {
     const entry = await QueueEntry.findById(queueEntryId);

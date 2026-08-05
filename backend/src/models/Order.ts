@@ -44,7 +44,7 @@ const orderSchema = new Schema<IOrderDoc>(
     total: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ['draft', 'confirmed', 'cooking', 'ready', 'served'],
+      enum: ['draft', 'confirmed', 'cooking', 'ready', 'served', 'completed'],
       default: 'draft',
     },
     triggers: {

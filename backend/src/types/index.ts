@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 export type TableStatus = 'available' | 'occupied' | 'cleaning' | 'ready';
 export type QueueStatus = 'waiting' | 'notified' | 'on_my_way' | 'seated' | 'cancelled' | 'no_show';
-export type OrderStatus = 'draft' | 'confirmed' | 'cooking' | 'ready' | 'served';
+export type OrderStatus = 'draft' | 'confirmed' | 'cooking' | 'ready' | 'served' | 'completed';
 export type UserRole = 'superadmin' | 'owner' | 'staff' | 'kitchen';
 
 export interface IRestaurant {

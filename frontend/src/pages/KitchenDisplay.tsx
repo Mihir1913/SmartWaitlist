@@ -1,13 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Flame,
   CheckCircle2,
-  Circle,
   Clock,
   Users,
   UtensilsCrossed,
   ChefHat,
+  GripVertical,
+  ArrowRight,
+  Sparkles,
+  Check,
+  RefreshCw,
+  AlertCircle,
+  Volume2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -40,429 +46,385 @@ function getQe(order: Order) {
     : null;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   Flash tracker – records order IDs that just arrived / transitioned
-   ═══════════════════════════════════════════════════════════════════════ */
+type OrderStatus = 'confirmed' | 'cooking' | 'ready' | 'completed';
 
-function useFlashTracker() {
-  const [flashes, setFlashes] = useState<Record<string, 'blue' | 'green'>>({});
-
-  const flash = useCallback((id: string, color: 'blue' | 'green') => {
-    setFlashes((prev) => ({ ...prev, [id]: color }));
-    setTimeout(() => {
-      setFlashes((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    }, 1500);
-  }, []);
-
-  return { flashes, flash };
+interface KanbanColumn {
+  id: OrderStatus;
+  title: string;
+  badgeBg: string;
+  badgeText: string;
+  borderColor: string;
+  icon: typeof Flame;
+  allowedNextStatus?: OrderStatus;
+  buttonLabel?: string;
 }
 
+const KANBAN_COLUMNS: KanbanColumn[] = [
+  {
+    id: 'confirmed',
+    title: 'New Pre-Orders',
+    badgeBg: 'bg-blue-500/20',
+    badgeText: 'text-blue-400 border-blue-500/30',
+    borderColor: 'border-blue-500/40',
+    icon: UtensilsCrossed,
+    allowedNextStatus: 'cooking',
+    buttonLabel: 'Start Cooking',
+  },
+  {
+    id: 'cooking',
+    title: 'Cooking In Progress',
+    badgeBg: 'bg-amber-500/20',
+    badgeText: 'text-amber-400 border-amber-500/30',
+    borderColor: 'border-amber-500/40',
+    icon: Flame,
+    allowedNextStatus: 'ready',
+    buttonLabel: 'Mark Ready',
+  },
+  {
+    id: 'ready',
+    title: 'Ready for Pickup',
+    badgeBg: 'bg-emerald-500/20',
+    badgeText: 'text-emerald-400 border-emerald-500/30',
+    borderColor: 'border-emerald-500/40',
+    icon: CheckCircle2,
+    allowedNextStatus: 'completed',
+    buttonLabel: 'Serve Order',
+  },
+  {
+    id: 'completed',
+    title: 'Served / Completed',
+    badgeBg: 'bg-stone-500/20',
+    badgeText: 'text-stone-400 border-stone-500/30',
+    borderColor: 'border-stone-500/40',
+    icon: Check,
+  },
+];
+
 /* ═══════════════════════════════════════════════════════════════════════
-   Order Card
+   Draggable Order Card
    ═══════════════════════════════════════════════════════════════════════ */
 
-function OrderCard({
+function DraggableOrderCard({
   order,
-  flashColor,
-  onStartCooking,
-  onMarkReady,
-  cookingElapsed,
+  onStatusChange,
+  onDragStart,
 }: {
   order: Order;
-  flashColor?: 'blue' | 'green';
-  onStartCooking: (id: string) => void;
-  onMarkReady: (id: string) => void;
-  cookingElapsed: string | null;
+  onStatusChange: (id: string, nextStatus: OrderStatus) => void;
+  onDragStart: (e: React.DragEvent, id: string) => void;
 }) {
   const qe = getQe(order);
-  const dualReady = order.triggers.tableReady && order.triggers.customerOnMyWay;
+  const dualReady = order.triggers?.tableReady && order.triggers?.customerOnMyWay;
+  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
-  const borderColor =
-    order.status === 'ready'
-      ? 'border-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.35)]'
-      : order.status === 'cooking'
-        ? 'border-amber-500'
-        : '';
+  const toggleItem = (idx: number) => {
+    setCheckedItems((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
 
-  const flashClass = flashColor === 'blue'
-    ? 'animate-flash-blue'
-    : flashColor === 'green'
-      ? 'animate-flash-green'
-      : '';
+  const currentCol = KANBAN_COLUMNS.find((c) => c.id === order.status);
 
   return (
     <div
-      className={`card bg-gray-900 border border-gray-700 ${borderColor} ${flashClass} flex flex-col gap-2 p-3 text-sm select-none`}
+      draggable
+      onDragStart={(e) => onDragStart(e, order._id)}
+      className="bg-stone-900 border border-stone-700/80 hover:border-orange-500/60 rounded-2xl p-4 text-stone-100 shadow-lg cursor-grab active:cursor-grabbing transition-all hover:shadow-orange-500/10 group space-y-3 relative overflow-hidden"
     >
+      {/* Dual Trigger Flash Bar */}
+      {dualReady && order.status === 'confirmed' && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-amber-400 animate-pulse" />
+      )}
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center h-8 min-w-[2rem] rounded-lg bg-gray-700 text-base font-bold text-white">
-            #{qe?.position ?? '—'}
-          </span>
-          <div className="leading-tight">
-            <p className="font-semibold text-white text-base">
-              {qe?.customer?.name ?? 'Guest'}
-            </p>
-            <p className="text-gray-400 text-xs flex items-center gap-1">
-              <Users size={12} />
-              Table for {qe?.partySize ?? '?'}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <div className="text-stone-500 group-hover:text-stone-300 transition">
+            <GripVertical className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-base">
+                {qe?.customer?.name ?? 'Guest'}
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-stone-800 text-stone-300 font-mono">
+                #{qe?.position ?? 'Queue'}
+              </span>
+            </div>
+            <p className="text-xs text-stone-400 flex items-center gap-2 mt-0.5">
+              <span className="flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-orange-400" />
+                {qe?.partySize ?? 2} guests
+              </span>
               {qe?.assignedTableId && typeof qe.assignedTableId === 'object' && (
-                <span className="ml-1 text-brand-600 font-medium">
+                <span className="font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
                   T{qe.assignedTableId.number}
                 </span>
               )}
             </p>
           </div>
         </div>
-        {qe?.joinedAt && (
-          <span className="text-gray-500 text-xs flex items-center gap-1">
-            <Clock size={12} />
-            {formatElapsed(qe.joinedAt)}
-          </span>
-        )}
-      </div>
 
-      {/* Dual trigger indicator (only for confirmed) */}
-      {order.status === 'confirmed' && (
-        <div className="flex items-center gap-3 rounded-lg bg-gray-800 px-2.5 py-1.5">
-          <span className="flex items-center gap-1.5 text-xs">
-            {order.triggers.tableReady ? (
-              <CheckCircle2 size={16} className="text-emerald-400" />
-            ) : (
-              <Circle size={16} className="text-gray-500" />
-            )}
-            <span className={order.triggers.tableReady ? 'text-emerald-400' : 'text-gray-500'}>
-              Table Ready
-            </span>
-          </span>
-          <span className="flex items-center gap-1.5 text-xs">
-            {order.triggers.customerOnMyWay ? (
-              <CheckCircle2 size={16} className="text-emerald-400" />
-            ) : (
-              <Circle size={16} className="text-gray-500" />
-            )}
-            <span className={order.triggers.customerOnMyWay ? 'text-emerald-400' : 'text-gray-500'}>
-              On Way
-            </span>
-          </span>
-          {dualReady && (
-            <span className="ml-auto text-[11px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 rounded px-2 py-0.5">
-              Ready to Cook
-            </span>
-          )}
+        {/* Elapsed Timer */}
+        <div className="text-right">
+          <div className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-lg">
+            <Clock className="w-3 h-3" />
+            {formatElapsed(order.createdAt || new Date().toISOString())}
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* Items */}
-      <ul className="flex flex-col gap-1">
-        {order.items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2 text-gray-200">
-            <span className="inline-flex items-center justify-center h-5 min-w-[1.5rem] rounded bg-gray-700 text-[11px] font-bold text-gray-300 shrink-0 mt-0.5">
-              x{item.qty}
-            </span>
-            <div className="leading-tight">
-              <span className="font-medium text-white">{item.name}</span>
-              {item.notes && (
-                <p className="text-amber-400/80 text-xs italic">{item.notes}</p>
-              )}
+      {/* Order Items List */}
+      <div className="bg-stone-950/80 rounded-xl p-3 border border-stone-800 space-y-2">
+        {order.items.map((item, idx) => (
+          <div
+            key={idx}
+            onClick={() => toggleItem(idx)}
+            className="flex items-center justify-between text-xs cursor-pointer select-none py-1 border-b border-stone-900 last:border-0"
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-4 h-4 rounded border flex items-center justify-center transition ${
+                  checkedItems[idx]
+                    ? 'bg-emerald-500 border-emerald-400 text-stone-950'
+                    : 'border-stone-600 bg-stone-900 text-transparent'
+                }`}
+              >
+                <Check className="w-3 h-3 stroke-[3]" />
+              </div>
+              <span
+                className={`font-semibold ${
+                  checkedItems[idx] ? 'line-through text-stone-500' : 'text-stone-200'
+                }`}
+              >
+                {item.qty}x {item.name}
+              </span>
             </div>
-          </li>
-        ))}
-      </ul>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-700/60">
-        <span className="text-base font-bold text-white">₹{order.total}</span>
-        {order.status === 'cooking' && cookingElapsed && (
-          <span className="flex items-center gap-1 text-amber-400 font-mono text-xs font-semibold">
-            <Flame size={14} />
-            {cookingElapsed}
-          </span>
-        )}
-        {order.status === 'ready' && order.readyAt && (
-          <span className="flex items-center gap-1 text-emerald-400 text-xs font-semibold">
-            <CheckCircle2 size={14} />
-            {formatElapsed(order.readyAt)} ago
-          </span>
-        )}
-      </div>
-
-      {/* Action Button */}
-      <div className="mt-1">
-        {order.status === 'confirmed' && dualReady && (
-          <button
-            onClick={() => onStartCooking(order._id)}
-            className="btn btn-primary w-full py-3 text-base font-bold animate-pulse rounded-xl"
-          >
-            <Flame size={18} className="mr-1.5" />
-            Start Cooking
-          </button>
-        )}
-        {order.status === 'cooking' && (
-          <button
-            onClick={() => onMarkReady(order._id)}
-            className="btn btn-success w-full py-3 text-base font-bold rounded-xl"
-          >
-            <CheckCircle2 size={18} className="mr-1.5" />
-            Mark Ready
-          </button>
-        )}
-        {order.status === 'ready' && (
-          <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-bold text-sm py-2 rounded-xl bg-emerald-400/10">
-            <UtensilsCrossed size={16} />
-            SERVED
+            {item.notes && (
+              <span className="text-[11px] text-amber-300 italic font-mono">
+                {item.notes}
+              </span>
+            )}
           </div>
-        )}
+        ))}
       </div>
-    </div>
-  );
-}
 
-/* ═══════════════════════════════════════════════════════════════════════
-   Column
-   ═══════════════════════════════════════════════════════════════════════ */
+      {/* Triggers Status Bar */}
+      <div className="flex items-center justify-between text-[11px] bg-stone-800/60 p-2 rounded-xl border border-stone-700/50">
+        <span className="text-stone-400 font-medium">Triggers Status:</span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-2 py-0.5 rounded-full font-bold ${
+              order.triggers?.tableReady
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                : 'bg-stone-900 text-stone-500'
+            }`}
+          >
+            Table Ready
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded-full font-bold ${
+              order.triggers?.customerOnMyWay
+                ? 'bg-blue-950 text-blue-300 border border-blue-500/40'
+                : 'bg-stone-900 text-stone-500'
+            }`}
+          >
+            On My Way
+          </span>
+        </div>
+      </div>
 
-function Column({
-  title,
-  icon,
-  count,
-  orders,
-  accentColor,
-  emptyMessage,
-  onStartCooking,
-  onMarkReady,
-  flashes,
-  cookingTimers,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  count: number;
-  orders: Order[];
-  accentColor: string;
-  emptyMessage: string;
-  onStartCooking: (id: string) => void;
-  onMarkReady: (id: string) => void;
-  flashes: Record<string, 'blue' | 'green'>;
-  cookingTimers: Record<string, string>;
-}) {
-  return (
-    <div className="flex flex-col min-w-0">
-      {/* Column header */}
-      <div className="flex items-center gap-2 px-1 pb-2 mb-2 border-b-2" style={{ borderColor: accentColor }}>
-        {icon}
-        <h2 className="text-lg font-bold text-white tracking-wide uppercase">{title}</h2>
-        <span
-          className="ml-auto inline-flex items-center justify-center h-7 min-w-[1.75rem] rounded-full text-sm font-bold text-white"
-          style={{ backgroundColor: accentColor }}
+      {/* Action Button for direct tap */}
+      {currentCol?.allowedNextStatus && currentCol?.buttonLabel && (
+        <button
+          onClick={() => onStatusChange(order._id, currentCol.allowedNextStatus!)}
+          className="w-full py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition transform active:scale-98"
         >
-          {count}
-        </span>
-      </div>
-
-      {/* Cards */}
-      <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1" style={{ scrollbarWidth: 'thin' }}>
-        {orders.length === 0 && (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-600 text-sm italic">{emptyMessage}</p>
-          </div>
-        )}
-        {orders.map((o) => (
-          <OrderCard
-            key={o._id}
-            order={o}
-            flashColor={flashes[o._id]}
-            onStartCooking={onStartCooking}
-            onMarkReady={onMarkReady}
-            cookingElapsed={o.status === 'cooking' ? (cookingTimers[o._id] ?? null) : null}
-          />
-        ))}
-      </div>
+          <span>{currentCol.buttonLabel}</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   KitchenDisplay (default export)
+   Main Kitchen Display Component
    ═══════════════════════════════════════════════════════════════════════ */
 
 export default function KitchenDisplay() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const { flashes, flash } = useFlashTracker();
+  const restaurantId = user?.restaurantId;
   const [now, setNow] = useState(Date.now());
-  const prevOrderIds = useRef<Set<string>>(new Set());
+  const [dragOverCol, setDragOverCol] = useState<OrderStatus | null>(null);
+  const [movingOrderId, setMovingOrderId] = useState<string | null>(null);
+  const [notificationMsg, setNotificationMsg] = useState<string>('');
 
-  // Tick every second for timers & clock
+  const queryClient = useQueryClient();
+
+  // Socket sync hook
+  const { state, isLoading } = useRestaurantState((event, data) => {
+    if (event === 'order:created') {
+      setNotificationMsg('🔔 New Pre-Order Received!');
+      setTimeout(() => setNotificationMsg(''), 4000);
+    } else if (event === 'order:cooking') {
+      setNotificationMsg('🔥 Order Moved to Cooking!');
+      setTimeout(() => setNotificationMsg(''), 3000);
+    } else if (event === 'order:ready') {
+      setNotificationMsg('✅ Order Marked Ready for Pickup!');
+      setTimeout(() => setNotificationMsg(''), 3000);
+    }
+  });
+
+  // Clock tick for timer updates
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  const { state, isLoading } = useRestaurantState((event, data) => {
-    if (event === 'order:cooking' || event === 'order:ready') {
-      const payload = data as { order?: Order };
-      if (payload?.order) {
-        flash(payload.order._id, 'green');
+  const orders: Order[] = state?.orders ?? state?.kitchenOrders ?? [];
+
+  const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
+    setMovingOrderId(orderId);
+    try {
+      await api.updateOrderStatus(orderId, nextStatus);
+      if (restaurantId) {
+        queryClient.invalidateQueries({ queryKey: ['restaurantSync', restaurantId] });
       }
+    } catch (err) {
+      console.error('Failed to move order:', err);
+    } finally {
+      setMovingOrderId(null);
     }
-  });
+  };
 
-  const orders: Order[] = state?.kitchenOrders ?? [];
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
 
-  /* ── Detect new orders for flash ────────────────────────────────── */
-  useEffect(() => {
-    const currentIds = new Set(orders.map((o) => o._id));
-    for (const id of currentIds) {
-      if (!prevOrderIds.current.has(id)) {
-        flash(id, 'blue');
-      }
+  const handleDragOver = (e: React.DragEvent, colId: OrderStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverCol !== colId) {
+      setDragOverCol(colId);
     }
-    prevOrderIds.current = currentIds;
-    // Only run when orders reference changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders, flash]);
+  };
 
-  /* ── Socket ─────────────────────────────────────────────────────── */
-  /* Real-time sync is handled by the shared restaurant state hook */
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverCol(null);
+  };
 
-  /* ── Mutations ──────────────────────────────────────────────────── */
-  const startCookingMutation = useMutation({
-    mutationFn: (orderId: string) => api.startCooking(orderId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['restaurantSync', user?.restaurantId] });
-    },
-  });
-
-  const markReadyMutation = useMutation({
-    mutationFn: (orderId: string) => api.markOrderReady(orderId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['restaurantSync', user?.restaurantId] });
-    },
-  });
-
-  /* ── Derived columns (FIFO – oldest first) ──────────────────────── */
-  const confirmed = orders
-    .filter((o) => o.status === 'confirmed')
-    .sort((a, b) => {
-      const qeA = getQe(a);
-      const qeB = getQe(b);
-      return (qeA?.position ?? Infinity) - (qeB?.position ?? Infinity);
-    });
-
-  const cooking = orders
-    .filter((o) => o.status === 'cooking')
-    .sort((a, b) => new Date(a.cookingStartedAt!).getTime() - new Date(b.cookingStartedAt!).getTime());
-
-  const ready = orders
-    .filter((o) => o.status === 'ready')
-    .sort((a, b) => new Date(a.readyAt!).getTime() - new Date(b.readyAt!).getTime());
-
-  /* ── Cooking timers ─────────────────────────────────────────────── */
-  const cookingTimers: Record<string, string> = {};
-  for (const o of cooking) {
-    if (o.cookingStartedAt) {
-      cookingTimers[o._id] = formatElapsed(o.cookingStartedAt);
+  const handleDrop = (e: React.DragEvent, targetStatus: OrderStatus) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const orderId = e.dataTransfer.getData('text/plain');
+    if (orderId) {
+      handleStatusChange(orderId, targetStatus);
     }
-  }
-
-  /* ── Loading ────────────────────────────────────────────────────── */
-  if (isLoading || !user) {
-    return (
-      <div className="h-screen w-screen bg-gray-950 flex items-center justify-center">
-        <ChefHat size={48} className="text-gray-600 animate-pulse" />
-      </div>
-    );
-  }
+  };
 
   return (
-    <div className="h-screen w-screen bg-gray-950 text-white flex flex-col overflow-hidden">
-      {/* ── CSS Animations ── */}
-      <style>{`
-        @keyframes flash-blue {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
-          30% { box-shadow: 0 0 24px 6px rgba(59,130,246,0.5); }
-          60% { box-shadow: 0 0 12px 2px rgba(59,130,246,0.25); }
-        }
-        @keyframes flash-green {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
-          30% { box-shadow: 0 0 24px 6px rgba(16,185,129,0.55); }
-          60% { box-shadow: 0 0 12px 2px rgba(16,185,129,0.25); }
-        }
-        .animate-flash-blue { animation: flash-blue 1.5s ease-out; }
-        .animate-flash-green { animation: flash-green 1.5s ease-out; }
-      `}</style>
-
-      {/* ── Top Bar ── */}
-      <header className="flex items-center gap-4 px-4 py-3 bg-gray-900 border-b border-gray-800 shrink-0">
-        <div className="flex items-center gap-2">
-          <Flame size={24} className="text-orange-400" />
-          <h1 className="text-xl font-bold tracking-tight">Kitchen Display</h1>
+    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col font-sans">
+      {/* Kitchen Display Top Navigation Bar */}
+      <header className="bg-stone-900 border-b border-stone-800 px-6 py-4 sticky top-0 z-30 flex items-center justify-between shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center justify-center">
+            <ChefHat className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="font-display font-extrabold text-xl text-white flex items-center gap-2">
+              Kitchen Display System (KDS)
+              <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                Live Sync Active
+              </span>
+            </h1>
+            <p className="text-xs text-stone-400 mt-0.5">
+              Drag & Drop Orders to Update Live Cooking Status Across Staff Tablets
+            </p>
+          </div>
         </div>
 
-        {/* Count badges */}
-        <div className="flex items-center gap-2 ml-4">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400">
-            {confirmed.length} New
-          </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400">
-            {cooking.length} Cooking
-          </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400">
-            {ready.length} Ready
-          </span>
-        </div>
+        <div className="flex items-center gap-6">
+          {notificationMsg && (
+            <div className="bg-orange-500/20 border border-orange-500/40 text-orange-300 px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
+              <Sparkles className="w-4 h-4 text-orange-400" />
+              <span>{notificationMsg}</span>
+            </div>
+          )}
 
-        <div className="ml-auto flex items-center gap-4">
-          <span className="text-gray-400 text-sm font-mono tabular-nums">{formatNow(now)}</span>
-          <span className="text-gray-500 text-sm">{user.name}</span>
+          <div className="text-right">
+            <div className="font-mono text-lg font-bold text-orange-400">
+              {formatNow(now)}
+            </div>
+            <div className="text-xs text-stone-500">Real-Time Sync</div>
+          </div>
         </div>
       </header>
 
-      {/* ── Main 3-column layout ── */}
-      <main className="flex-1 grid grid-cols-3 gap-4 p-4 min-h-0">
-        <Column
-          title="New Orders"
-          icon={<Clock size={20} className="text-blue-400" />}
-          count={confirmed.length}
-          orders={confirmed}
-          accentColor="#3b82f6"
-          emptyMessage="No new orders"
-          onStartCooking={(id) => startCookingMutation.mutate(id)}
-          onMarkReady={markReadyMutation.mutate}
-          flashes={flashes}
-          cookingTimers={cookingTimers}
-        />
+      {/* Main Kanban Drag & Drop Columns Grid */}
+      <main className="flex-1 p-6 overflow-x-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 h-full min-w-[1100px]">
+          {KANBAN_COLUMNS.map((col) => {
+            const ColumnIcon = col.icon;
+            const columnOrders = orders.filter((o) => o.status === col.id);
+            const isOver = dragOverCol === col.id;
 
-        <Column
-          title="Cooking"
-          icon={<Flame size={20} className="text-amber-400" />}
-          count={cooking.length}
-          orders={cooking}
-          accentColor="#f59e0b"
-          emptyMessage="Nothing cooking"
-          onStartCooking={startCookingMutation.mutate}
-          onMarkReady={markReadyMutation.mutate}
-          flashes={flashes}
-          cookingTimers={cookingTimers}
-        />
+            return (
+              <div
+                key={col.id}
+                onDragOver={(e) => handleDragOver(e, col.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, col.id)}
+                className={`bg-stone-900/60 border-2 ${
+                  isOver
+                    ? 'border-orange-500 bg-orange-500/5 shadow-2xl scale-[1.01]'
+                    : col.borderColor
+                } rounded-3xl p-4 flex flex-col gap-4 transition-all duration-200 min-h-[600px]`}
+              >
+                {/* Column Header */}
+                <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`p-2 rounded-xl ${col.badgeBg} ${col.badgeText}`}>
+                      <ColumnIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-display font-bold text-white text-base">
+                        {col.title}
+                      </h2>
+                      <p className="text-[11px] text-stone-500">
+                        {columnOrders.length} orders
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold font-mono ${col.badgeBg} ${col.badgeText} border`}
+                  >
+                    {columnOrders.length}
+                  </span>
+                </div>
 
-        <Column
-          title="Ready"
-          icon={<CheckCircle2 size={20} className="text-emerald-400" />}
-          count={ready.length}
-          orders={ready}
-          accentColor="#10b981"
-          emptyMessage="Nothing ready"
-          onStartCooking={startCookingMutation.mutate}
-          onMarkReady={markReadyMutation.mutate}
-          flashes={flashes}
-          cookingTimers={cookingTimers}
-        />
+                {/* Column Orders List */}
+                <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+                  {columnOrders.length === 0 ? (
+                    <div className="h-44 border-2 border-dashed border-stone-800 rounded-2xl flex flex-col items-center justify-center text-center p-4 text-stone-600 space-y-2">
+                      <ColumnIcon className="w-8 h-8 opacity-30" />
+                      <p className="text-xs font-medium">Drag order card here</p>
+                    </div>
+                  ) : (
+                    columnOrders.map((order) => (
+                      <DraggableOrderCard
+                        key={order._id}
+                        order={order}
+                        onStatusChange={handleStatusChange}
+                        onDragStart={handleDragStart}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </main>
     </div>
   );

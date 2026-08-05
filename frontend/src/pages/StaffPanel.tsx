@@ -17,7 +17,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { useRestaurantState } from '../hooks/useRestaurantState';
-import type { Table, QueueEntry } from '../types';
+import type { Table, QueueEntry, Order } from '../types';
 
 /* ═══════════════════════════════════════════════════════════════════════
    Helpers
@@ -192,7 +192,11 @@ export default function StaffPanel() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { state, isLoading: stateLoading } = useRestaurantState();
+  const { state, isLoading: stateLoading } = useRestaurantState((event) => {
+    if (event === 'order:ready') {
+      showToast('🔔 Order is READY in the Kitchen! Serve to Table.', 'success');
+    }
+  });
 
   /* ── Clock ───────────────────────────────────────────────────────── */
   const [clock, setClock] = useState(new Date());
@@ -213,8 +217,13 @@ export default function StaffPanel() {
 
   const tables: Table[] = state?.tables ?? [];
   const queue: QueueEntry[] = state?.queue ?? [];
+  const orders: Order[] = state?.orders ?? state?.kitchenOrders ?? [];
   const tablesLoading = stateLoading;
   const queueLoading = stateLoading;
+
+  const readyOrders = useMemo(() => {
+    return orders.filter((o: Order) => o.status === 'ready');
+  }, [orders]);
 
   /* ── Derived ─────────────────────────────────────────────────────── */
   const activeQueue = useMemo(
@@ -351,7 +360,36 @@ export default function StaffPanel() {
         </div>
       </header>
 
-      {/* ───────────────────────── MAIN ────────────────────────────── */}
+      {/* Kitchen Ready Alert Banner */}
+      {readyOrders.length > 0 && (
+        <div className="max-w-[1680px] mx-auto px-4 lg:px-6 pt-4">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-4 text-white shadow-lg flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-bold text-lg">
+                🔥
+              </div>
+              <div>
+                <h3 className="font-display font-extrabold text-base">
+                  {readyOrders.length} Kitchen Order(s) Hot & Ready!
+                </h3>
+                <p className="text-xs text-emerald-100">
+                  {readyOrders
+                    .map((o: Order) => {
+                      const qe = typeof o.queueEntryId === 'object' ? o.queueEntryId : null;
+                      return `${qe?.customer?.name || 'Guest'} (${o.items.length} items)`;
+                    })
+                    .join(' • ')}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold bg-white text-emerald-800 px-3.5 py-1.5 rounded-xl uppercase tracking-wider shadow">
+              Serve to Table
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────── MAIN CONTAINER ───────────────────── */}
       <main className="max-w-[1680px] mx-auto px-4 lg:px-6 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* ════════════ TABLE GRID (left 65%) ════════════ */}
