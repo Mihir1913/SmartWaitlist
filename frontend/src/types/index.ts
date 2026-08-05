@@ -12,6 +12,9 @@ export interface Restaurant {
   slug: string;
   address: string;
   whatsappPhone?: string;
+  description?: string;
+  openingHours?: string;
+  cuisine?: string;
   settings: {
     avgTurnoverMinutes: number;
     maxQueueSize: number;
@@ -69,17 +72,28 @@ export interface Table {
 
 export interface MenuItem {
   _id: string;
+  categoryId: string;
   name: string;
   description: string;
   price: number;
   isAvailable: boolean;
   prepTimeMinutes: number;
+  gstRate?: number;
 }
 
 export interface MenuCategory {
   _id: string;
   name: string;
+  sortOrder?: number;
   items: MenuItem[];
+}
+
+export interface StaffUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'owner' | 'staff' | 'kitchen';
+  createdAt?: string;
 }
 
 export interface Order {

@@ -9,6 +9,10 @@ import {
   MessageCircle,
   ShoppingBag,
   CheckCircle2,
+  Clock,
+  MapPin,
+  Utensils,
+  Info,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import type { MenuItem } from '../types';
@@ -101,11 +105,42 @@ export default function JoinPage() {
         <Link to="/" className="p-2 rounded-lg hover:bg-white/80 transition">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="font-display font-bold text-lg">{restaurant?.name}</h1>
-          <p className="text-sm text-stone-500">{restaurant?.address}</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="font-display font-bold text-lg text-surface-900">{restaurant?.name}</h1>
+            {restaurant?.cuisine && (
+              <span className="text-[10px] font-semibold bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
+                {restaurant.cuisine}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-stone-500 flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+            {restaurant?.address}
+          </p>
         </div>
       </header>
+
+      {/* Restaurant Overview Info Card */}
+      <div className="max-w-lg mx-auto px-4 mb-4">
+        <div className="bg-white border border-stone-200/80 rounded-2xl p-4 shadow-sm space-y-2">
+          {restaurant?.description && (
+            <p className="text-xs text-stone-600 leading-relaxed italic">{restaurant.description}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-stone-500 pt-1 border-t border-stone-100">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-brand-600" />
+              Hours: {restaurant?.openingHours || '11:00 AM - 11:00 PM'}
+            </span>
+            {restaurant?.whatsappPhone && (
+              <span className="flex items-center gap-1">
+                <Phone className="w-3.5 h-3.5 text-brand-600" />
+                Contact: {restaurant.whatsappPhone}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
 
       <main className="max-w-lg mx-auto px-4 pb-8">
         {step === 'form' && (

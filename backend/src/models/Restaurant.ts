@@ -6,6 +6,9 @@ export interface IRestaurantDoc extends Document {
   address: string;
   timezone: string;
   whatsappPhone: string;
+  description?: string;
+  openingHours?: string;
+  cuisine?: string;
   settings: {
     avgTurnoverMinutes: number;
     maxQueueSize: number;
@@ -20,6 +23,9 @@ const restaurantSchema = new Schema<IRestaurantDoc>(
     address: { type: String, required: true },
     timezone: { type: String, default: 'Asia/Kolkata' },
     whatsappPhone: { type: String, required: true },
+    description: { type: String, default: '' },
+    openingHours: { type: String, default: '11:00 AM - 11:00 PM' },
+    cuisine: { type: String, default: 'Multi-Cuisine & Dining' },
     settings: {
       avgTurnoverMinutes: { type: Number, default: 45 },
       maxQueueSize: { type: Number, default: 50 },

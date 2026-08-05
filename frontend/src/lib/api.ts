@@ -256,4 +256,101 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  // Restaurant Owner Management APIs
+  updateMyRestaurant: (data: {
+    name?: string;
+    address?: string;
+    whatsappPhone?: string;
+    description?: string;
+    openingHours?: string;
+    cuisine?: string;
+    settings?: { avgTurnoverMinutes?: number; maxQueueSize?: number; preOrderEnabled?: boolean };
+  }) =>
+    request<{ message: string; restaurant: import('../types').Restaurant }>('/restaurants/my-restaurant', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  getOwnerMenu: () =>
+    request<{
+      categories: import('../types').MenuCategory[];
+      items: import('../types').MenuItem[];
+    }>('/restaurants/my-restaurant/menu'),
+
+  createCategory: (name: string, sortOrder?: number) =>
+    request<{ message: string; category: import('../types').MenuCategory }>(
+      '/restaurants/my-restaurant/menu/categories',
+      {
+        method: 'POST',
+        body: JSON.stringify({ name, sortOrder }),
+      }
+    ),
+
+  updateCategory: (id: string, name: string, sortOrder?: number) =>
+    request<{ message: string; category: import('../types').MenuCategory }>(
+      `/restaurants/my-restaurant/menu/categories/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ name, sortOrder }),
+      }
+    ),
+
+  deleteCategory: (id: string) =>
+    request<{ message: string }>(`/restaurants/my-restaurant/menu/categories/${id}`, {
+      method: 'DELETE',
+    }),
+
+  createMenuItem: (data: {
+    categoryId: string;
+    name: string;
+    description?: string;
+    price: number;
+    prepTimeMinutes?: number;
+    gstRate?: number;
+    isAvailable?: boolean;
+  }) =>
+    request<{ message: string; item: import('../types').MenuItem }>('/restaurants/my-restaurant/menu/items', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateMenuItem: (
+    id: string,
+    data: {
+      categoryId?: string;
+      name?: string;
+      description?: string;
+      price?: number;
+      prepTimeMinutes?: number;
+      gstRate?: number;
+      isAvailable?: boolean;
+    }
+  ) =>
+    request<{ message: string; item: import('../types').MenuItem }>(
+      `/restaurants/my-restaurant/menu/items/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  deleteMenuItem: (id: string) =>
+    request<{ message: string }>(`/restaurants/my-restaurant/menu/items/${id}`, {
+      method: 'DELETE',
+    }),
+
+  getRestaurantStaff: () =>
+    request<{ staff: import('../types').StaffUser[] }>('/restaurants/my-restaurant/staff'),
+
+  createStaffUser: (data: { name: string; email: string; password: string; role: 'staff' | 'kitchen' | 'owner' }) =>
+    request<{ message: string; user: import('../types').StaffUser }>('/restaurants/my-restaurant/staff', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteStaffUser: (id: string) =>
+    request<{ message: string }>(`/restaurants/my-restaurant/staff/${id}`, {
+      method: 'DELETE',
+    }),
 };
