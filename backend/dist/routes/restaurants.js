@@ -68,15 +68,14 @@ router.get('/:slug', async (req, res) => {
                 name: { $regex: new RegExp(`^${safeNameRegex}$`, 'i') },
             });
         }
-        // Tier 3: Fallback to the first existing restaurant in MongoDB
+        // Tier 3: Auto-seed if database has 0 restaurants
         if (!restaurant) {
-            restaurant = await Restaurant.findOne();
-        }
-        // Tier 4: Auto-seed if database has 0 restaurants
-        if (!restaurant) {
-            console.log('[Auto-Seed] No restaurants found in DB. Triggering auto-seed...');
-            await runSeed(true);
-            restaurant = await Restaurant.findOne();
+            const count = await Restaurant.countDocuments();
+            if (count === 0) {
+                console.log('[Auto-Seed] No restaurants found in DB. Triggering auto-seed...');
+                await runSeed(true);
+                restaurant = await Restaurant.findOne();
+            }
         }
         if (!restaurant)
             return res.status(404).json({ error: 'Restaurant not found' });
@@ -104,6 +103,22 @@ router.get('/:slug', async (req, res) => {
     catch (err) {
         console.error('Fetch restaurant error:', err);
         res.status(500).json({ error: 'Failed to fetch restaurant' });
+    }
+});
+// --- OWNER-PROTECTED ROUTES ---
+// GET /api/restaurants/my-restaurant - Get owner's restaurant details
+router.get('/my-restaurant', authMiddleware, async (req, res) => {
+    try {
+        const restaurantId = req.user?.restaurantId;
+        if (!restaurantId)
+            return res.status(400).json({ error: 'No restaurant assigned to user' });
+        const restaurant = await Restaurant.findById(restaurantId);
+        if (!restaurant)
+            return res.status(404).json({ error: 'Restaurant not found' });
+        res.json({ restaurant });
+    }
+    catch (err) {
+        res.status(500).json({ error: 'Failed to fetch restaurant details' });
     }
 });
 // --- OWNER-PROTECTED ROUTES ---

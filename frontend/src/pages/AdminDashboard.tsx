@@ -1378,6 +1378,7 @@ function StaffTab() {
 function ProfileTab() {
   const { state } = useRestaurantState();
   const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
   const [address, setAddress] = useState('');
   const [whatsappPhone, setWhatsappPhone] = useState('');
   const [description, setDescription] = useState('');
@@ -1393,12 +1394,13 @@ function ProfileTab() {
   const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
-    // Load initial from window or fetch
+    // Load logged in owner's restaurant details
     api
-      .getRestaurant('spice-garden')
+      .getMyRestaurant()
       .then((res) => {
         if (res.restaurant) {
           setName(res.restaurant.name);
+          setSlug(res.restaurant.slug);
           setAddress(res.restaurant.address);
           setWhatsappPhone(res.restaurant.whatsappPhone || '');
           setDescription(res.restaurant.description || '');
@@ -1409,7 +1411,23 @@ function ProfileTab() {
           setPreOrder(res.restaurant.settings?.preOrderEnabled ?? true);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Fallback to spice-garden if no owner token
+        api.getRestaurant('spice-garden').then((res) => {
+          if (res.restaurant) {
+            setName(res.restaurant.name);
+            setSlug(res.restaurant.slug);
+            setAddress(res.restaurant.address);
+            setWhatsappPhone(res.restaurant.whatsappPhone || '');
+            setDescription(res.restaurant.description || '');
+            setOpeningHours(res.restaurant.openingHours || '11:00 AM - 11:00 PM');
+            setCuisine(res.restaurant.cuisine || 'Multi-Cuisine & Dining');
+            setAvgTurnover(res.restaurant.settings?.avgTurnoverMinutes || 45);
+            setMaxQueue(res.restaurant.settings?.maxQueueSize || 50);
+            setPreOrder(res.restaurant.settings?.preOrderEnabled ?? true);
+          }
+        }).catch(() => {});
+      });
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -1467,8 +1485,8 @@ function ProfileTab() {
 
       {showQR && (
         <QRCodeModal
-          restaurantName={name || 'Spice Garden'}
-          slug="spice-garden"
+          restaurantName={name || 'Restaurant'}
+          slug={slug || 'spice-garden'}
           address={address}
           whatsappPhone={whatsappPhone}
           onClose={() => setShowQR(false)}

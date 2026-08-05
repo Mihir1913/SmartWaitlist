@@ -274,6 +274,9 @@ export const api = {
     }),
 
   // Restaurant Owner Management APIs
+  getMyRestaurant: () =>
+    request<{ restaurant: import('../types').Restaurant }>('/restaurants/my-restaurant'),
+
   updateMyRestaurant: (data: {
     name?: string;
     address?: string;
