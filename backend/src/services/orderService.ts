@@ -87,12 +87,12 @@ export async function createPreOrder(
 }
 
 export async function getKitchenOrders(restaurantId: string) {
-  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
   return Order.find({
     restaurantId,
     $or: [
       { status: { $in: ['confirmed', 'cooking', 'ready'] } },
-      { status: 'completed', updatedAt: { $gte: twoHoursAgo } },
+      { status: { $in: ['completed', 'served'] }, updatedAt: { $gte: sixHoursAgo } },
     ],
   })
     .sort({ createdAt: 1 })
@@ -101,7 +101,7 @@ export async function getKitchenOrders(restaurantId: string) {
 
 export async function updateOrderStatus(
   orderId: string,
-  newStatus: 'confirmed' | 'cooking' | 'ready' | 'completed'
+  newStatus: 'confirmed' | 'cooking' | 'ready' | 'completed' | 'served'
 ) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');

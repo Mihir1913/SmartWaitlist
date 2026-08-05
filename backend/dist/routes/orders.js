@@ -14,7 +14,7 @@ router.get('/:restaurantId/kitchen', authMiddleware, async (req, res) => {
 router.patch('/:orderId/status', authMiddleware, async (req, res) => {
     try {
         const { status } = req.body;
-        if (!['confirmed', 'cooking', 'ready', 'completed'].includes(status)) {
+        if (!['confirmed', 'cooking', 'ready', 'completed', 'served'].includes(status)) {
             return res.status(400).json({ error: 'Invalid order status' });
         }
         const order = await updateOrderStatus(req.params.orderId, status);

@@ -69,12 +69,12 @@ export async function createPreOrder(queueEntryId, items) {
     return order;
 }
 export async function getKitchenOrders(restaurantId) {
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
     return Order.find({
         restaurantId,
         $or: [
             { status: { $in: ['confirmed', 'cooking', 'ready'] } },
-            { status: 'completed', updatedAt: { $gte: twoHoursAgo } },
+            { status: { $in: ['completed', 'served'] }, updatedAt: { $gte: sixHoursAgo } },
         ],
     })
         .sort({ createdAt: 1 })

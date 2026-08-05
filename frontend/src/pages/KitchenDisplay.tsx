@@ -366,7 +366,11 @@ export default function KitchenDisplay() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 h-full min-w-[1100px]">
           {KANBAN_COLUMNS.map((col) => {
             const ColumnIcon = col.icon;
-            const columnOrders = orders.filter((o) => o.status === col.id);
+            const columnOrders = orders.filter((o) =>
+              col.id === 'completed'
+                ? o.status === 'completed' || o.status === 'served'
+                : o.status === col.id
+            );
             const isOver = dragOverCol === col.id;
 
             return (

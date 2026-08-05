@@ -13,6 +13,9 @@ import {
   MapPin,
   Utensils,
   Info,
+  Copy,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import type { MenuItem } from '../types';
@@ -28,6 +31,7 @@ export default function JoinPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const { data } = useQuery({
     queryKey: ['restaurant', slug],
@@ -303,23 +307,66 @@ export default function JoinPage() {
         )}
 
         {step === 'success' && (
-          <div className="card p-8 text-center animate-slide-up">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
+          <div className="card p-8 text-center animate-slide-up space-y-6">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h2 className="font-display text-2xl font-bold mb-2">You're in the queue!</h2>
-            <p className="text-stone-600 mb-6">
-              We'll send WhatsApp updates with your position and estimated wait time.
-            </p>
-            <button
-              onClick={() => navigate(`/status/${entryId}`)}
-              className="btn-primary w-full mb-3"
-            >
-              Track My Status
-            </button>
-            <button onClick={() => navigate('/')} className="btn-secondary w-full">
-              Back to Home
-            </button>
+
+            <div>
+              <h2 className="font-display text-2xl font-bold text-surface-900">You're in the Queue!</h2>
+              <p className="text-stone-500 text-sm mt-1">
+                We've reserved your spot. Save your tracking details to check live position & cooking progress.
+              </p>
+            </div>
+
+            {/* Tracking ID Box */}
+            <div className="bg-stone-900 text-white rounded-2xl p-5 border border-stone-800 space-y-3 shadow-xl">
+              <div className="text-xs uppercase tracking-wider font-semibold text-stone-400">
+                Your Order Tracking ID
+              </div>
+              <div className="font-mono text-3xl font-extrabold text-orange-400">
+                #{entryId ? entryId.slice(-6).toUpperCase() : 'QUEUED'}
+              </div>
+              <div className="text-xs text-stone-400 font-mono">
+                Entry ID: {entryId}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname.includes('/SmartWaitlist') ? '/SmartWaitlist' : ''}/status/${entryId}`;
+                  navigator.clipboard.writeText(url);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2500);
+                }}
+                className="w-full py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition border border-stone-700"
+              >
+                {copiedLink ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 font-bold">Tracking Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-orange-400" />
+                    <span>Copy Direct Tracking Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => navigate(`/status/${entryId}`)}
+                className="btn-primary w-full py-3 text-base flex items-center justify-center gap-2 shadow-lg"
+              >
+                <span>Track My Live Order & Status</span>
+                <ExternalLink className="w-4 h-4" />
+              </button>
+              <button onClick={() => navigate('/')} className="btn-secondary w-full py-2.5">
+                Back to Home Page
+              </button>
+            </div>
           </div>
         )}
       </main>
