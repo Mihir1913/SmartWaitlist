@@ -18,9 +18,13 @@ export async function clearDummyData() {
 }
 
 export async function runSeed(force = false) {
-  const userCount = await User.countDocuments();
-  if (!force && userCount > 0) {
-    console.log(`[Auto-Seed] Database already contains ${userCount} users. Skipping seed.`);
+  const [userCount, restaurantCount] = await Promise.all([
+    User.countDocuments(),
+    Restaurant.countDocuments(),
+  ]);
+
+  if (!force && userCount > 0 && restaurantCount > 0) {
+    console.log(`[Auto-Seed] Database contains ${userCount} users & ${restaurantCount} restaurants. Skipping seed.`);
     return false;
   }
 
@@ -128,6 +132,6 @@ export async function runSeed(force = false) {
     },
   ]);
 
-  console.log('[Auto-Seed] ✅ Clean database initialization complete! Zero dummy queue entries created.');
+  console.log('[Auto-Seed] ✅ Clean database initialization complete! Spice Garden restaurant created.');
   return true;
 }

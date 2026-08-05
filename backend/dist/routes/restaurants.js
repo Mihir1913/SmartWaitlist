@@ -6,6 +6,7 @@ import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { User } from '../models/User.js';
 import { getWhatsAppJoinUrl } from '../services/whatsappService.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { runSeed } from '../services/seedService.js';
 const router = Router();
 // Validation schemas
 const updateProfileSchema = z.object({
@@ -53,7 +54,21 @@ const createStaffSchema = z.object({
 // GET /api/restaurants/:slug
 router.get('/:slug', async (req, res) => {
     try {
-        const restaurant = await Restaurant.findOne({ slug: req.params.slug });
+        const requestedSlug = (req.params.slug || '').trim();
+        let restaurant = await Restaurant.findOne({
+            slug: { $regex: new RegExp(`^${requestedSlug}$`, 'i') },
+        });
+        if (!restaurant) {
+            // Check if DB is empty of restaurants, run auto-seed if needed
+            const count = await Restaurant.countDocuments();
+            if (count === 0) {
+                console.log('[Auto-Seed] No restaurants found in DB on GET request. Auto-seeding...');
+                await runSeed(true);
+                restaurant = await Restaurant.findOne({
+                    slug: { $regex: new RegExp(`^${requestedSlug}$`, 'i') },
+                });
+            }
+        }
         if (!restaurant)
             return res.status(404).json({ error: 'Restaurant not found' });
         const categories = await MenuCategory.find({ restaurantId: restaurant._id }).sort({ sortOrder: 1 });
@@ -77,7 +92,8 @@ router.get('/:slug', async (req, res) => {
             })),
         });
     }
-    catch {
+    catch (err) {
+        console.error('Fetch restaurant error:', err);
         res.status(500).json({ error: 'Failed to fetch restaurant' });
     }
 });
