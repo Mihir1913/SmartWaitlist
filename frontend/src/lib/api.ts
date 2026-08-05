@@ -178,6 +178,17 @@ export const api = {
   getTables: (restaurantId: string) =>
     request<{ tables: import('./types').Table[] }>(`/tables/${restaurantId}`),
 
+  createTable: (number: string, capacity: number) =>
+    request<{ message: string; table: import('./types').Table }>('/tables', {
+      method: 'POST',
+      body: JSON.stringify({ number, capacity }),
+    }),
+
+  deleteTable: (tableId: string) =>
+    request<{ message: string }>(`/tables/${tableId}`, {
+      method: 'DELETE',
+    }),
+
   updateTableStatus: (tableId: string, status: 'occupied' | 'cleaning' | 'ready') =>
     request<{ table: import('./types').Table }>(`/tables/${tableId}/status`, {
       method: 'PATCH',
