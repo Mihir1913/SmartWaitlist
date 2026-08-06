@@ -47,6 +47,7 @@ app.use('/api/queue', queueRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/webhooks/whatsapp', whatsappRoutes);
 app.use('/api/superadmin', superadminRoutes);
 async function start() {
