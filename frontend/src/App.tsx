@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { api } from './lib/api';
 import HomePage from './pages/HomePage';
 import JoinPage from './pages/JoinPage';
 import LoginPage from './pages/LoginPage';
@@ -37,6 +38,21 @@ function DemoBar() {
       </div>
 
       <div className="flex items-center gap-2 font-semibold">
+        <button
+          onClick={async () => {
+            try {
+              await api.seedDemoSimulation();
+              alert('🚀 Live Demo Simulation Loaded! 5 Queue Entries & 2 Kitchen Orders Created.');
+              window.location.reload();
+            } catch (err) {
+              alert('Failed to launch demo simulation');
+            }
+          }}
+          className="px-3 py-1 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-extrabold transition flex items-center gap-1 shadow active:scale-95"
+          title="Populate 5 queue entries, 3 table statuses, and 2 kitchen orders"
+        >
+          🚀 Launch Demo Data
+        </button>
         <Link to="/admin" className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition">
           👑 Admin
         </Link>
