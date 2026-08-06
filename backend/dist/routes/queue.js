@@ -1,9 +1,11 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { z } from 'zod';
 import { joinQueue, getQueue, cancelQueueEntry } from '../services/queueService.js';
 import { createPreOrder, markOnMyWayForOrder } from '../services/orderService.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { QueueEntry } from '../models/QueueEntry.js';
+import { Order } from '../models/Order.js';
 import { notifyQueueJoined } from '../services/whatsappService.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { getRestaurantSyncState } from '../services/syncService.js';
@@ -42,17 +44,56 @@ router.post('/join-by-slug/:slug', async (req, res) => {
 });
 router.get('/entry/:entryId', async (req, res) => {
     try {
-        const entry = await QueueEntry.findById(req.params.entryId)
-            .populate('assignedTableId', 'number status')
-            .populate({
-            path: 'preOrderId',
-            populate: { path: 'queueEntryId', select: 'customer partySize position' },
-        });
+        const rawParam = req.params.entryId.trim();
+        const searchParam = rawParam.replace(/^#/, '');
+        let entry = null;
+        // 1. Direct ObjectId match
+        if (mongoose.Types.ObjectId.isValid(searchParam)) {
+            entry = await QueueEntry.findById(searchParam)
+                .populate('assignedTableId', 'number status')
+                .populate({
+                path: 'preOrderId',
+                populate: { path: 'queueEntryId', select: 'customer partySize position' },
+            });
+        }
+        // 2. Lookup by Phone Number
+        if (!entry) {
+            const cleanedPhone = searchParam.replace(/\D/g, '');
+            if (cleanedPhone.length >= 10) {
+                entry = await QueueEntry.findOne({
+                    'customer.phone': { $regex: cleanedPhone + '$' },
+                    status: { $in: ['waiting', 'notified', 'on_my_way', 'seated'] },
+                })
+                    .sort({ createdAt: -1 })
+                    .populate('assignedTableId', 'number status')
+                    .populate({
+                    path: 'preOrderId',
+                    populate: { path: 'queueEntryId', select: 'customer partySize position' },
+                });
+            }
+        }
+        // 3. Short Tracking Code lookup (matching last 6 hex chars of ObjectId)
+        if (!entry && searchParam.length >= 4) {
+            const allActive = await QueueEntry.find()
+                .sort({ createdAt: -1 })
+                .limit(100)
+                .populate('assignedTableId', 'number status')
+                .populate({
+                path: 'preOrderId',
+                populate: { path: 'queueEntryId', select: 'customer partySize position' },
+            });
+            entry =
+                allActive.find((e) => e._id.toString().toLowerCase().endsWith(searchParam.toLowerCase())) || null;
+        }
         if (!entry)
             return res.status(404).json({ error: 'Queue entry not found' });
-        res.json({ entry });
+        const restaurant = await Restaurant.findById(entry.restaurantId).select('name slug');
+        const order = entry.preOrderId
+            ? await Order.findOne({ queueEntryId: entry._id })
+            : await Order.findOne({ queueEntryId: entry._id });
+        res.json({ entry, restaurant, order });
     }
-    catch {
+    catch (err) {
         res.status(500).json({ error: 'Failed to fetch entry' });
     }
 });

@@ -178,6 +178,13 @@ export const api = {
       { method: 'POST', body: JSON.stringify(data) }
     ),
 
+  getQueueEntry: (entryId: string) =>
+    request<{
+      entry: import('./types').QueueEntry & { restaurantId?: string };
+      restaurant?: { name: string; slug: string; id: string };
+      order?: import('./types').Order;
+    }>(`/queue/entry/${entryId}`),
+
   getQueue: (restaurantId: string) =>
     request<{ queue: import('./types').QueueEntry[] }>(`/queue/${restaurantId}`),
 

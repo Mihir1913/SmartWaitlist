@@ -210,12 +210,14 @@ export default function CustomerStatus() {
 
   const fetchEntry = useCallback(async (): Promise<EntryResponse> => {
     if (!activeEntryId) throw new Error('NO_ID');
-    const res = await fetch('/api/queue/entry/' + activeEntryId);
-    if (!res.ok) {
-      if (res.status === 404) throw new Error('NOT_FOUND');
-      throw new Error('Failed to fetch');
+    try {
+      return await api.getQueueEntry(activeEntryId);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('404')) {
+        throw new Error('NOT_FOUND');
+      }
+      throw err;
     }
-    return res.json();
   }, [activeEntryId]);
 
   const { data, isLoading, isError, error } = useQuery({
