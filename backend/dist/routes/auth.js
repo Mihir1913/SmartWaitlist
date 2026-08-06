@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { User } from '../models/User.js';
 import { config } from '../config/index.js';
-import { runSeed, clearDummyData } from '../services/seedService.js';
+import { runSeed, clearDummyData, seedDemoSimulation } from '../services/seedService.js';
 const router = Router();
 const loginSchema = z.object({
     email: z.string().email(),
@@ -63,6 +63,18 @@ router.all('/clear-dummy', async (req, res) => {
     catch (err) {
         console.error('Clear dummy route error:', err);
         res.status(500).json({ error: 'Failed to clear dummy data' });
+    }
+});
+// Endpoint to populate live demo simulation dataset
+router.all('/seed-demo-simulation', async (req, res) => {
+    try {
+        const restaurantId = req.body?.restaurantId || req.query?.restaurantId;
+        const result = await seedDemoSimulation(restaurantId);
+        res.json(result);
+    }
+    catch (err) {
+        console.error('Demo simulation seed error:', err);
+        res.status(500).json({ error: 'Failed to populate demo simulation dataset' });
     }
 });
 export default router;

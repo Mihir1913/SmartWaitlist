@@ -152,6 +152,12 @@ export const api = {
       method: 'POST',
     }),
 
+  seedDemoSimulation: (restaurantId?: string) =>
+    request<{ message: string; restaurantId: string }>('/auth/seed-demo-simulation', {
+      method: 'POST',
+      body: JSON.stringify({ restaurantId }),
+    }),
+
   getPublicRestaurants: () =>
     request<{
       restaurants: {

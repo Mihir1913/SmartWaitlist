@@ -135,3 +135,106 @@ export async function runSeed(force = false) {
   console.log('[Auto-Seed] ✅ Clean database initialization complete! Spice Garden restaurant created.');
   return true;
 }
+
+export async function seedDemoSimulation(restaurantId?: string) {
+  let restaurant = null;
+  if (restaurantId) {
+    restaurant = await Restaurant.findById(restaurantId);
+  }
+  if (!restaurant) {
+    restaurant = await Restaurant.findOne({ slug: 'spice-garden' });
+  }
+  if (!restaurant) {
+    restaurant = await Restaurant.findOne();
+  }
+  if (!restaurant) {
+    await runSeed(true);
+    restaurant = await Restaurant.findOne();
+  }
+  if (!restaurant) throw new Error('No restaurant found for demo simulation');
+
+  const rId = restaurant._id;
+
+  // 1. Wipe existing queue entries and orders for this restaurant
+  await Promise.all([
+    QueueEntry.deleteMany({ restaurantId: rId }),
+    Order.deleteMany({ restaurantId: rId }),
+  ]);
+
+  // 2. Fetch menu items for realistic pre-orders
+  const items = await MenuItem.find({ restaurantId: rId }).limit(6);
+
+  // 3. Create 5 realistic queue entries
+  const entriesData = [
+    { name: 'Rahul Sharma', phone: '9876543210', partySize: 4, position: 1, status: 'waiting', wait: 12 },
+    { name: 'Ananya Verma', phone: '9876543211', partySize: 2, position: 2, status: 'waiting', wait: 20 },
+    { name: 'Vikram Malhotra', phone: '9876543212', partySize: 5, position: 3, status: 'notified', wait: 5 },
+    { name: 'Priya Nair', phone: '9876543213', partySize: 3, position: 4, status: 'on_my_way', wait: 2 },
+    { name: 'Amitabh Kapoor', phone: '9876543214', partySize: 6, position: 5, status: 'waiting', wait: 35 },
+  ];
+
+  const createdEntries = [];
+  for (const d of entriesData) {
+    const entry = await QueueEntry.create({
+      restaurantId: rId,
+      customer: { name: d.name, phone: d.phone },
+      partySize: d.partySize,
+      position: d.position,
+      status: d.status,
+      estimatedWaitMinutes: d.wait,
+      joinedAt: new Date(Date.now() - (6 - d.position) * 8 * 60 * 1000),
+      notifiedAt: d.status !== 'waiting' ? new Date(Date.now() - 4 * 60 * 1000) : undefined,
+      onMyWayAt: d.status === 'on_my_way' ? new Date(Date.now() - 2 * 60 * 1000) : undefined,
+    });
+    createdEntries.push(entry);
+  }
+
+  // 4. Update table statuses realistically
+  const tables = await Table.find({ restaurantId: rId });
+  if (tables.length >= 4) {
+    await Table.findByIdAndUpdate(tables[0]._id, { status: 'occupied' });
+    await Table.findByIdAndUpdate(tables[1]._id, { status: 'cleaning' });
+    await Table.findByIdAndUpdate(tables[2]._id, { status: 'ready', currentQueueEntryId: createdEntries[2]._id });
+    await Table.findByIdAndUpdate(tables[3]._id, { status: 'available' });
+    
+    // Link assigned table to Vikram Malhotra
+    await QueueEntry.findByIdAndUpdate(createdEntries[2]._id, { assignedTableId: tables[2]._id });
+  }
+
+  // 5. Create 2 realistic pre-orders
+  if (items.length >= 2 && createdEntries.length >= 2) {
+    // Order 1: Confirmed
+    const o1 = await Order.create({
+      restaurantId: rId,
+      queueEntryId: createdEntries[0]._id,
+      items: [
+        { menuItemId: items[0]._id, name: items[0].name, qty: 2, price: items[0].price },
+        { menuItemId: items[1]._id, name: items[1].name, qty: 1, price: items[1].price },
+      ],
+      subtotal: items[0].price * 2 + items[1].price,
+      gst: Math.round((items[0].price * 2 + items[1].price) * 0.05),
+      total: Math.round((items[0].price * 2 + items[1].price) * 1.05),
+      status: 'confirmed',
+      triggers: { tableReady: true, customerOnMyWay: false },
+    });
+    await QueueEntry.findByIdAndUpdate(createdEntries[0]._id, { preOrderId: o1._id });
+
+    // Order 2: Cooking In Progress
+    const o2 = await Order.create({
+      restaurantId: rId,
+      queueEntryId: createdEntries[3]._id,
+      items: [
+        { menuItemId: items[1]._id, name: items[1].name, qty: 2, price: items[1].price },
+      ],
+      subtotal: items[1].price * 2,
+      gst: Math.round(items[1].price * 2 * 0.05),
+      total: Math.round(items[1].price * 2 * 1.05),
+      status: 'cooking',
+      cookingStartedAt: new Date(Date.now() - 5 * 60 * 1000),
+      triggers: { tableReady: true, customerOnMyWay: true, dualTriggerMetAt: new Date(Date.now() - 5 * 60 * 1000) },
+    });
+    await QueueEntry.findByIdAndUpdate(createdEntries[3]._id, { preOrderId: o2._id });
+  }
+
+  return { message: 'Demo simulation dataset loaded successfully!', restaurantId: rId.toString() };
+}

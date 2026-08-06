@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import {
   QrCode,
@@ -9,6 +9,7 @@ import {
   X,
   Sparkles,
   ExternalLink,
+  Frame,
 } from 'lucide-react';
 
 interface QRCodeModalProps {
@@ -19,20 +20,21 @@ interface QRCodeModalProps {
   onClose: () => void;
 }
 
+type StandeeTemplate = 'acrylic' | 'table_card' | 'poster';
+
 export default function QRCodeModal({
   restaurantName,
   slug,
   address,
-  whatsappPhone,
   onClose,
 }: QRCodeModalProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [template, setTemplate] = useState<StandeeTemplate>('acrylic');
+  const [slogan, setSlogan] = useState('Scan to Skip the Line & Track Live Status');
 
-  // Determine full target URL (handles local & GitHub Pages base path)
   const baseUrl = window.location.origin;
-  // If hosted on GitHub Pages with subpath like /SmartWaitlist
   const pathPrefix = window.location.pathname.includes('/SmartWaitlist')
     ? '/SmartWaitlist'
     : '';
@@ -42,7 +44,7 @@ export default function QRCodeModal({
     QRCode.toDataURL(
       joinUrl,
       {
-        width: 400,
+        width: 450,
         margin: 2,
         color: {
           dark: '#1c1917',
@@ -68,7 +70,7 @@ export default function QRCodeModal({
     if (!qrDataUrl) return;
     const a = document.createElement('a');
     a.href = qrDataUrl;
-    a.download = `${slug}-qr-code.png`;
+    a.download = `${slug}-qr-standee.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -78,11 +80,13 @@ export default function QRCodeModal({
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    const accentColor = template === 'acrylic' ? '#ea580c' : template === 'table_card' ? '#059669' : '#2563eb';
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${restaurantName} - QR Code Standee</title>
+          <title>${restaurantName} - Official QR Standee</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
             body {
@@ -96,7 +100,7 @@ export default function QRCodeModal({
               background-color: #f5f5f4;
             }
             .standee {
-              width: 380px;
+              width: ${template === 'poster' ? '450px' : '380px'};
               background: #ffffff;
               border: 3px solid #1c1917;
               border-radius: 28px;
@@ -106,7 +110,7 @@ export default function QRCodeModal({
             }
             .badge {
               display: inline-block;
-              background: #ea580c;
+              background: ${accentColor};
               color: white;
               font-family: 'Outfit', sans-serif;
               font-size: 11px;
@@ -119,7 +123,7 @@ export default function QRCodeModal({
             }
             h1 {
               font-family: 'Outfit', sans-serif;
-              font-size: 26px;
+              font-size: 28px;
               font-weight: 800;
               color: #0c0a09;
               margin: 0 0 8px 0;
@@ -128,24 +132,24 @@ export default function QRCodeModal({
             p.sub {
               font-size: 13px;
               color: #78716c;
-              margin: 0 0 28px 0;
+              margin: 0 0 24px 0;
             }
             .qr-container {
               background: #ffffff;
               padding: 16px;
-              border: 2px border #e7e5e4;
+              border: 2px solid ${accentColor};
               border-radius: 20px;
               display: inline-block;
               margin-bottom: 24px;
             }
             .qr-container img {
-              width: 220px;
-              height: 220px;
+              width: 240px;
+              height: 240px;
               display: block;
             }
             .instructions {
-              background: #fff7ed;
-              border: 1px solid #ffedd5;
+              background: #fafaf9;
+              border: 1px solid #e7e5e4;
               border-radius: 16px;
               padding: 16px;
               margin-bottom: 20px;
@@ -154,14 +158,13 @@ export default function QRCodeModal({
               font-family: 'Outfit', sans-serif;
               font-size: 15px;
               font-weight: 700;
-              color: #9a3412;
-              margin: 0 0 6px 0;
+              color: #1c1917;
+              margin: 0 0 4px 0;
             }
             .instructions p {
               font-size: 12px;
-              color: #c2410c;
+              color: #57534e;
               margin: 0;
-              line-height: 1.4;
             }
             .footer {
               font-size: 11px;
@@ -176,21 +179,21 @@ export default function QRCodeModal({
         </head>
         <body>
           <div class="standee">
-            <div class="badge">Smart Waitlist</div>
+            <div class="badge">Official Waitlist & Pre-Order Standee</div>
             <h1>${restaurantName}</h1>
-            <p class="sub">${address || 'Scan to Join Waitlist & Pre-Order Dishes'}</p>
+            <p class="sub">${address || 'Fine Dining & Quick Service'}</p>
 
             <div class="qr-container">
               <img src="${qrDataUrl}" alt="QR Code" />
             </div>
 
             <div class="instructions">
-              <h3>Scan with Camera to Join</h3>
-              <p>Skip the line, check live waiting time & pre-order your food!</p>
+              <h3>${slogan}</h3>
+              <p>Scan with phone camera for WhatsApp updates & live cooking progress</p>
             </div>
 
             <div class="footer">
-              Powered by SmartWaitlist • ${joinUrl}
+              SmartWaitlist • ${joinUrl}
             </div>
           </div>
           <script>
@@ -206,7 +209,7 @@ export default function QRCodeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-sm">
-      <div className="bg-stone-900 border border-stone-800 rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl relative text-stone-100 animate-fade-in">
+      <div className="bg-stone-900 border border-stone-800 rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative text-stone-100 animate-fade-in">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-stone-800 pb-4">
           <div className="flex items-center gap-3">
@@ -215,7 +218,7 @@ export default function QRCodeModal({
             </div>
             <div>
               <h3 className="text-lg font-bold text-white font-display">
-                Restaurant QR Code
+                Printable QR Standee Generator
               </h3>
               <p className="text-xs text-stone-400">{restaurantName}</p>
             </div>
@@ -228,21 +231,60 @@ export default function QRCodeModal({
           </button>
         </div>
 
-        {/* QR Code Canvas Card */}
-        <div className="bg-white p-6 rounded-2xl text-center space-y-3 border border-stone-200">
+        {/* Template Selector */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider flex items-center gap-1">
+            <Frame className="w-3.5 h-3.5 text-orange-400" /> Choose Standee Template:
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'acrylic', label: 'Acrylic Frame', color: 'border-orange-500 text-orange-400' },
+              { id: 'table_card', label: 'Table Card', color: 'border-emerald-500 text-emerald-400' },
+              { id: 'poster', label: 'Entrance Poster', color: 'border-blue-500 text-blue-400' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTemplate(t.id as StandeeTemplate)}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition ${
+                  template === t.id
+                    ? `${t.color} bg-stone-800 shadow`
+                    : 'border-stone-800 text-stone-400 hover:bg-stone-800/50'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Slogan Input */}
+        <div>
+          <label className="text-xs font-semibold text-stone-400 mb-1 block">
+            Standee Slogan:
+          </label>
+          <input
+            type="text"
+            value={slogan}
+            onChange={(e) => setSlogan(e.target.value)}
+            className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200 focus:border-orange-500 outline-none"
+          />
+        </div>
+
+        {/* QR Code Canvas Preview */}
+        <div className="bg-white p-5 rounded-2xl text-center space-y-3 border border-stone-200 shadow-inner">
           {loading ? (
-            <div className="h-56 flex items-center justify-center text-stone-400">
+            <div className="h-52 flex items-center justify-center text-stone-400">
               <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <div className="inline-block p-2 bg-stone-50 rounded-xl border border-stone-200">
-              <img src={qrDataUrl} alt="Restaurant QR Code" className="w-56 h-56 mx-auto" />
+              <img src={qrDataUrl} alt="Restaurant QR Code" className="w-48 h-48 mx-auto" />
             </div>
           )}
 
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-stone-900 flex items-center justify-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-orange-500" /> Scan to Join Waitlist
+            <p className="text-xs font-bold text-stone-900 flex items-center justify-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-orange-500" /> {slogan}
             </p>
             <p className="text-[11px] text-stone-500 font-mono break-all px-2">
               {joinUrl}
@@ -279,7 +321,7 @@ export default function QRCodeModal({
 
           <button
             onClick={handlePrint}
-            className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-stone-950 font-bold transition text-xs"
+            className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-bold transition text-xs shadow-lg"
           >
             <Printer className="w-4 h-4" />
             <span>Print Standee</span>
@@ -292,7 +334,7 @@ export default function QRCodeModal({
             href={joinUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-orange-400 hover:underline"
+            className="inline-flex items-center gap-1 text-xs text-orange-400 hover:underline font-semibold"
           >
             Open Customer Join Page <ExternalLink className="w-3 h-3" />
           </a>

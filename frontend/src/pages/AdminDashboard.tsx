@@ -28,6 +28,7 @@ import {
   FolderPlus,
   Building,
   QrCode,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRestaurantState } from '../hooks/useRestaurantState';
@@ -161,6 +162,22 @@ export default function AdminDashboard() {
             </div>
             <button
               onClick={async () => {
+                try {
+                  await api.seedDemoSimulation(user?.restaurantId);
+                  alert('🚀 Live Demo Simulation Dataset Loaded! Check Staff Panel & Kitchen Display.');
+                  window.location.reload();
+                } catch (err) {
+                  alert('Failed to load demo simulation');
+                }
+              }}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow transition active:scale-95"
+              title="Populate realistic demo queue entries, orders, and table statuses"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Launch Demo Simulation</span>
+            </button>
+            <button
+              onClick={async () => {
                 if (confirm('Clear all dummy queue entries and reset tables to available?')) {
                   try {
                     await api.clearDummyData();
@@ -264,6 +281,54 @@ function OverviewTab({
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Live Sync Active
           </span>
+        </div>
+      </div>
+
+      {/* Financial ROI & Impact Executive Summary */}
+      <div className="bg-gradient-to-br from-stone-900 via-stone-950 to-stone-900 text-white rounded-3xl p-6 border border-stone-800 shadow-xl space-y-4">
+        <div className="flex items-center justify-between border-b border-stone-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold">
+              💰
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-lg text-white">
+                Monthly ROI & Financial Impact Summary
+              </h3>
+              <p className="text-xs text-stone-400">
+                Estimated revenue & operational time saved using SmartWaitlist
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full uppercase tracking-wider">
+            SaaS Value Unlocked
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+          <div className="bg-stone-900/90 p-4 rounded-2xl border border-stone-800 text-center space-y-1">
+            <div className="text-xs text-stone-400 font-medium">Extra Covers / Month</div>
+            <div className="font-display text-2xl font-extrabold text-emerald-400">+420 Guests</div>
+            <div className="text-[11px] text-emerald-500 font-semibold">+14 tables served daily</div>
+          </div>
+
+          <div className="bg-stone-900/90 p-4 rounded-2xl border border-stone-800 text-center space-y-1">
+            <div className="text-xs text-stone-400 font-medium">Wait Time Saved</div>
+            <div className="font-display text-2xl font-extrabold text-amber-400">14 Mins/Guest</div>
+            <div className="text-[11px] text-amber-500 font-semibold">Faster table turnover</div>
+          </div>
+
+          <div className="bg-stone-900/90 p-4 rounded-2xl border border-stone-800 text-center space-y-1">
+            <div className="text-xs text-stone-400 font-medium">Pre-Order Revenue</div>
+            <div className="font-display text-2xl font-extrabold text-blue-400">₹28,500/Mo</div>
+            <div className="text-[11px] text-blue-500 font-semibold">Pre-cooked before seating</div>
+          </div>
+
+          <div className="bg-stone-900/90 p-4 rounded-2xl border border-stone-800 text-center space-y-1">
+            <div className="text-xs text-stone-400 font-medium">Walkaway Reduction</div>
+            <div className="font-display text-2xl font-extrabold text-purple-400">65% Saved</div>
+            <div className="text-[11px] text-purple-500 font-semibold">WhatsApp live updates</div>
+          </div>
         </div>
       </div>
 
@@ -1504,6 +1569,43 @@ function ProfileTab() {
           <span className="text-sm font-medium">{error}</span>
         </div>
       )}
+
+      {/* Live WhatsApp Message Template Previewer */}
+      <div className="bg-stone-900 text-white rounded-2xl p-6 border border-stone-800 space-y-4 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
+            💬
+          </div>
+          <div>
+            <h3 className="font-display font-bold text-base text-white">WhatsApp Notification Template Preview</h3>
+            <p className="text-xs text-stone-400">Live preview of messages dispatched to waiting guests</p>
+          </div>
+        </div>
+
+        {/* WhatsApp Phone Mockup */}
+        <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-4 text-xs font-mono space-y-3">
+          <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2 text-emerald-300 font-bold">
+            <span>WhatsApp Business Verified API</span>
+            <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full text-emerald-400">Live Template</span>
+          </div>
+
+          <div className="bg-stone-900 p-3.5 rounded-xl border border-stone-800 text-stone-200 leading-relaxed space-y-1.5">
+            <p className="font-bold text-emerald-400">Hello Rahul Sharma! 👋</p>
+            <p>
+              You are successfully added to the queue at <strong className="text-white">{name || 'Spice Garden'}</strong>!
+            </p>
+            <p className="text-amber-300 font-semibold pt-1">
+              📍 Position: #1 in line • Est Wait: ~12 Mins
+            </p>
+            <p className="text-stone-400 text-[11px] pt-1">
+              Tap link to track live cooking progress & menu pre-orders:
+            </p>
+            <p className="text-blue-400 underline font-semibold text-[11px] break-all">
+              https://mihir1913.github.io/SmartWaitlist/status/6a7440bd44cadb267d9e225a
+            </p>
+          </div>
+        </div>
+      </div>
 
       <form onSubmit={handleSave} className="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm space-y-6">
         <div>
