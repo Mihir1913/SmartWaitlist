@@ -4,9 +4,11 @@ import { WhatsAppController } from '../controllers/whatsappController.js';
 import { authMiddleware } from '../middleware/auth.js';
 const router = Router();
 // --- META CLOUD API WEBHOOK ENDPOINTS ---
-// GET /api/whatsapp/webhook or /api/webhooks/whatsapp (verification)
+// Handles GET verification on /, /webhook, /api/whatsapp, /api/whatsapp/webhook, /api/webhooks/whatsapp
+router.get('/', WhatsAppWebhookController.verifyWebhook);
 router.get('/webhook', WhatsAppWebhookController.verifyWebhook);
-// POST /api/whatsapp/webhook or /api/webhooks/whatsapp (event notifications)
+// Handles POST events on /, /webhook, /api/whatsapp, /api/whatsapp/webhook, /api/webhooks/whatsapp
+router.post('/', WhatsAppWebhookController.handleWebhookEvent);
 router.post('/webhook', WhatsAppWebhookController.handleWebhookEvent);
 // --- RESTAURANT CONFIGURATION ENDPOINTS ---
 router.get('/settings/:restaurantId', authMiddleware, WhatsAppController.getSettings);
