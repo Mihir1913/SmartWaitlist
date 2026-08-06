@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.DEV ? 'http://localhost:3001' : '';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
+  ? import.meta.env.VITE_SOCKET_URL
+  : typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000'
+  : 'https://smartwaitlist.onrender.com';
 
 type EventCallback = (event: string, data: unknown) => void;
 
