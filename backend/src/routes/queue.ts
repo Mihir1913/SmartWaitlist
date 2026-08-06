@@ -22,7 +22,11 @@ router.post('/:restaurantId/join', async (req, res) => {
   try {
     const data = joinSchema.parse(req.body);
     const entry = await joinQueue(req.params.restaurantId, data);
-    await notifyQueueJoined(data.phone, data.name, entry.position, entry.estimatedWaitMinutes);
+    try {
+      await notifyQueueJoined(data.phone, data.name, entry.position, entry.estimatedWaitMinutes, req.params.restaurantId);
+    } catch (wsErr) {
+      console.warn('[QueueJoin] WhatsApp notification warning:', wsErr);
+    }
     res.status(201).json({ entry });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to join queue';
@@ -37,7 +41,11 @@ router.post('/join-by-slug/:slug', async (req, res) => {
 
     const data = joinSchema.parse(req.body);
     const entry = await joinQueue(restaurant._id.toString(), data);
-    await notifyQueueJoined(data.phone, data.name, entry.position, entry.estimatedWaitMinutes);
+    try {
+      await notifyQueueJoined(data.phone, data.name, entry.position, entry.estimatedWaitMinutes, restaurant._id.toString());
+    } catch (wsErr) {
+      console.warn('[QueueJoinSlug] WhatsApp notification warning:', wsErr);
+    }
     res.status(201).json({ entry, restaurant: { name: restaurant.name, slug: restaurant.slug } });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to join queue';
