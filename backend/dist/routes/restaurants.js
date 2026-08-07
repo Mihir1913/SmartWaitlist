@@ -6,10 +6,32 @@ import { Table } from '../models/Table.js';
 import { QueueEntry } from '../models/QueueEntry.js';
 import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { User } from '../models/User.js';
+import { Inquiry } from '../models/Inquiry.js';
 import { getWhatsAppJoinUrl } from '../services/whatsappService.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { runSeed } from '../services/seedService.js';
 const router = Router();
+router.post('/inquiry', async (req, res) => {
+    try {
+        const { restaurantName, ownerName, phone, email, city, dailyFootfall, notes } = req.body;
+        if (!restaurantName || !ownerName || !phone || !email) {
+            return res.status(400).json({ error: 'Please provide restaurant name, owner name, phone, and email' });
+        }
+        const inquiry = await Inquiry.create({
+            restaurantName,
+            ownerName,
+            phone,
+            email,
+            city: city || 'Not specified',
+            dailyFootfall: dailyFootfall || '50-100 guests',
+            notes: notes || '',
+        });
+        res.status(201).json({ success: true, message: 'Inquiry submitted successfully!', inquiry });
+    }
+    catch (err) {
+        res.status(500).json({ error: 'Failed to submit inquiry' });
+    }
+});
 // Validation schemas
 const updateProfileSchema = z.object({
     name: z.string().min(2).optional(),

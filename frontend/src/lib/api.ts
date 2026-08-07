@@ -435,4 +435,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  submitInquiry: (data: {
+    restaurantName: string;
+    ownerName: string;
+    phone: string;
+    email: string;
+    city?: string;
+    dailyFootfall?: string;
+    notes?: string;
+  }) =>
+    request<{ success: boolean; message: string }>('/restaurants/inquiry', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
