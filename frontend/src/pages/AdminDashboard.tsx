@@ -162,22 +162,6 @@ export default function AdminDashboard() {
             </div>
             <button
               onClick={async () => {
-                try {
-                  await api.seedDemoSimulation(user?.restaurantId);
-                  alert('🚀 Live Demo Simulation Dataset Loaded! Check Staff Panel & Kitchen Display.');
-                  window.location.reload();
-                } catch (err) {
-                  alert('Failed to load demo simulation');
-                }
-              }}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow transition active:scale-95"
-              title="Populate realistic demo queue entries, orders, and table statuses"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Launch Demo Simulation</span>
-            </button>
-            <button
-              onClick={async () => {
                 if (confirm('Clear all dummy queue entries and reset tables to available?')) {
                   try {
                     await api.clearDummyData();

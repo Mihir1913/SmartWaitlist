@@ -508,22 +508,6 @@ export default function SuperAdminDashboard() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={async () => {
-                              try {
-                                await api.seedDemoSimulation(r.id);
-                                alert(`🚀 Loaded Demo Simulation for "${r.name}"! 5 Queue Entries & 2 Kitchen Orders Created.`);
-                                fetchRestaurants();
-                              } catch (err) {
-                                alert('Failed to seed demo data');
-                              }
-                            }}
-                            className="p-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-bold rounded-lg transition flex items-center gap-1 text-xs"
-                            title="Populate 5 queue entries, 3 table statuses, and 2 kitchen orders"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span className="hidden xl:inline font-bold">Seed Demo</span>
-                          </button>
-                          <button
                             onClick={() => setQrTarget(r)}
                             className="p-2 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-orange-400 rounded-lg transition flex items-center gap-1.5 text-xs"
                             title="View & Download QR Code"
