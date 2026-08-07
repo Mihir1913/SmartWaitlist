@@ -73,17 +73,19 @@ function stepState(sk: StepKey, status: QueueEntry['status']): 'done' | 'active'
 
 function StatusStepper({ status }: { status: QueueEntry['status'] }) {
   const doneCount = STEPS.filter((s) => stepState(s.key, status) === 'done').length;
-  const pct = (doneCount / (STEPS.length - 1)) * 100;
+  const progressPct = Math.min(100, Math.max(0, (doneCount / (STEPS.length - 1)) * 100));
   const isTerm = ['cancelled', 'no_show'].includes(status);
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 overflow-hidden">
       <div className="flex items-center justify-between relative">
-        <div className="absolute top-5 left-6 right-6 h-0.5 bg-stone-200 z-0" />
-        <div
-          className="absolute top-5 left-6 h-0.5 bg-green-400 z-0 transition-all duration-700"
-          style={{ width: pct + '%' }}
-        />
+        {/* Progress track container bounded between left-6 and right-6 */}
+        <div className="absolute top-5 left-6 right-6 h-0.5 bg-stone-200 z-0 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 transition-all duration-700 rounded-full"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
         {STEPS.map((step) => {
           const st = stepState(step.key, status);
           return (
