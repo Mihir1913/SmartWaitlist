@@ -54,7 +54,7 @@ app.use('/api/superadmin', superadminRoutes);
 app.use('/api/payments', paymentRoutes);
 async function start() {
     await connectDB();
-    await runSeed(false);
+    await runSeed(true);
     httpServer.listen(config.port, () => {
         console.log(`Smart Waitlist API running on http://localhost:${config.port}`);
     });

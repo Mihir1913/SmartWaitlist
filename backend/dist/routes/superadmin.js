@@ -244,4 +244,16 @@ router.post('/restaurants/:id/users', async (req, res) => {
         res.status(500).json({ error: 'Failed to create user' });
     }
 });
+// POST /api/superadmin/reset-database - Reset database, preserve SuperAdmin, create fresh restaurant & menu
+router.post('/reset-database', async (req, res) => {
+    try {
+        const { runSeed } = await import('../services/seedService.js');
+        await runSeed(true);
+        res.json({ message: 'Database wiped and fresh restaurant & menu initialized! SuperAdmin preserved.' });
+    }
+    catch (err) {
+        console.error('Database reset error:', err);
+        res.status(500).json({ error: 'Failed to reset database' });
+    }
+});
 export default router;

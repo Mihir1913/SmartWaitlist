@@ -15,31 +15,27 @@ export async function clearDummyData() {
     console.log('[Clear-Data] ✅ All dummy queue entries and orders cleared cleanly!');
     return true;
 }
-export async function runSeed(force = false) {
-    const [userCount, restaurantCount] = await Promise.all([
-        User.countDocuments(),
-        Restaurant.countDocuments(),
-    ]);
-    if (!force && userCount > 0 && restaurantCount > 0) {
-        console.log(`[Auto-Seed] Database contains ${userCount} users & ${restaurantCount} restaurants. Skipping seed.`);
-        return false;
-    }
-    console.log('[Auto-Seed] Seeding clean initial database records...');
+export async function runSeed(force = true) {
+    console.log('[Database-Reset] Preserving SuperAdmin while wiping all old restaurant data...');
+    // 1. Preserve existing superadmin user if present
+    const existingSuperAdmin = await User.findOne({ role: 'superadmin' });
+    // 2. Wipe old data
     await Promise.all([
         Restaurant.deleteMany({}),
         Table.deleteMany({}),
         MenuCategory.deleteMany({}),
         MenuItem.deleteMany({}),
-        User.deleteMany({}),
+        User.deleteMany({ role: { $ne: 'superadmin' } }),
         QueueEntry.deleteMany({}),
         Order.deleteMany({}),
     ]);
+    // 3. Create fresh production restaurant
     const restaurant = await Restaurant.create({
-        name: 'Spice Garden',
+        name: 'Spice Garden Fine Dining',
         slug: 'spice-garden',
-        address: '42 MG Road, Bangalore',
+        address: '42 MG Road, Indiranagar, Bangalore',
         whatsappPhone: '919876543210',
-        description: 'Authentic Indian Cuisine & Fine Dining Experience',
+        description: 'Authentic Indian Cuisine, Mughlai Delicacies & Fine Dining Experience',
         openingHours: '11:00 AM - 11:00 PM',
         cuisine: 'North Indian & Mughlai',
         settings: {
@@ -48,77 +44,93 @@ export async function runSeed(force = false) {
             preOrderEnabled: true,
         },
     });
-    // Create clean initial tables all in 'available' status
-    const tables = [];
-    for (let i = 1; i <= 6; i++) {
-        tables.push({
-            restaurantId: restaurant._id,
-            number: `T${i}`,
-            capacity: i <= 2 ? 2 : i <= 4 ? 4 : 6,
-            status: 'available',
-        });
-    }
-    await Table.insertMany(tables);
-    const categories = await MenuCategory.insertMany([
-        { restaurantId: restaurant._id, name: 'Starters', sortOrder: 1 },
-        { restaurantId: restaurant._id, name: 'Main Course', sortOrder: 2 },
-        { restaurantId: restaurant._id, name: 'Beverages', sortOrder: 3 },
-        { restaurantId: restaurant._id, name: 'Desserts', sortOrder: 4 },
-    ]);
-    const menuData = [
-        { cat: 0, name: 'Paneer Tikka', desc: 'Grilled cottage cheese with spices', price: 280 },
-        { cat: 0, name: 'Chicken 65', desc: 'Spicy fried chicken bites', price: 320 },
-        { cat: 0, name: 'Veg Spring Rolls', desc: 'Crispy rolls with vegetables', price: 220 },
-        { cat: 1, name: 'Butter Chicken', desc: 'Creamy tomato curry', price: 380 },
-        { cat: 1, name: 'Dal Makhani', desc: 'Slow-cooked black lentils', price: 260 },
-        { cat: 1, name: 'Biryani (Veg)', desc: 'Fragrant rice with vegetables', price: 290 },
-        { cat: 1, name: 'Biryani (Chicken)', desc: 'Aromatic chicken biryani', price: 350 },
-        { cat: 2, name: 'Fresh Lime Soda', desc: 'Refreshing lime drink', price: 80 },
-        { cat: 2, name: 'Mango Lassi', desc: 'Sweet yogurt drink', price: 120 },
-        { cat: 3, name: 'Gulab Jamun', desc: 'Warm milk dumplings', price: 120 },
-        { cat: 3, name: 'Kulfi Falooda', desc: 'Traditional ice cream dessert', price: 150 },
+    // 4. Create 8 clean tables all in 'available' status
+    const tables = [
+        { restaurantId: restaurant._id, number: 'T1', capacity: 2, status: 'available' },
+        { restaurantId: restaurant._id, number: 'T2', capacity: 2, status: 'available' },
+        { restaurantId: restaurant._id, number: 'T3', capacity: 4, status: 'available' },
+        { restaurantId: restaurant._id, number: 'T4', capacity: 4, status: 'available' },
+        { restaurantId: restaurant._id, number: 'T5', capacity: 4, status: 'available' },
+        { restaurantId: restaurant._id, number: 'T6', capacity: 6, status: 'available' },
+        { restaurantId: restaurant._id, number: 'T7', capacity: 6, status: 'available' },
+        { restaurantId: restaurant._id, number: 'T8', capacity: 8, status: 'available' },
     ];
-    await MenuItem.insertMany(menuData.map((item) => ({
+    await Table.insertMany(tables);
+    // 5. Create 4 structured menu categories
+    const categories = await MenuCategory.insertMany([
+        { restaurantId: restaurant._id, name: 'Starters & Appetizers', sortOrder: 1 },
+        { restaurantId: restaurant._id, name: 'Main Course', sortOrder: 2 },
+        { restaurantId: restaurant._id, name: 'Desserts & Sweets', sortOrder: 3 },
+        { restaurantId: restaurant._id, name: 'Beverages & Shakes', sortOrder: 4 },
+    ]);
+    // 6. Create rich menu items with dietary badges (Veg, Non-Veg, Vegan)
+    const menuItemsData = [
+        // Starters (cat 0)
+        { cat: 0, name: 'Paneer Tikka', desc: 'Grilled cottage cheese marinated in aromatic spices', price: 280, isVeg: true, isVegan: false, prep: 15 },
+        { cat: 0, name: 'Chicken Tikka', desc: 'Juicy tender chicken bites grilled in charcoal tandoor', price: 340, isVeg: false, isVegan: false, prep: 15 },
+        { cat: 0, name: 'Crispy Corn', desc: 'Golden fried sweet corn tossed with herbs and lemon', price: 220, isVeg: true, isVegan: true, prep: 10 },
+        { cat: 0, name: 'Hara Bhara Kabab', desc: 'Pan-fried spinach and green pea patties', price: 240, isVeg: true, isVegan: false, prep: 12 },
+        // Main Course (cat 1)
+        { cat: 1, name: 'Butter Chicken', desc: 'Tender chicken pieces cooked in rich creamy tomato butter gravy', price: 390, isVeg: false, isVegan: false, prep: 20 },
+        { cat: 1, name: 'Paneer Butter Masala', desc: 'Cottage cheese cubes cooked in velvety rich gravy', price: 320, isVeg: true, isVegan: false, prep: 18 },
+        { cat: 1, name: 'Dal Makhani', desc: 'Slow-cooked black lentils finished with cream and butter', price: 270, isVeg: true, isVegan: false, prep: 15 },
+        { cat: 1, name: 'Veg Dum Biryani', desc: 'Fragrant basmati rice layered with seasonal vegetables and spices', price: 290, isVeg: true, isVegan: false, prep: 20 },
+        { cat: 1, name: 'Chicken Dum Biryani', desc: 'Hyderabadi style aromatic chicken dum biryani', price: 360, isVeg: false, isVegan: false, prep: 20 },
+        { cat: 1, name: 'Garlic Naan', desc: 'Freshly baked tandoori bread topped with garlic and butter', price: 70, isVeg: true, isVegan: false, prep: 5 },
+        // Desserts (cat 2)
+        { cat: 2, name: 'Gulab Jamun', desc: 'Warm milk dumplings soaked in cardamom sugar syrup', price: 130, isVeg: true, isVegan: false, prep: 5 },
+        { cat: 2, name: 'Rasmalai', desc: 'Soft cottage cheese disks in chilled saffron milk', price: 160, isVeg: true, isVegan: false, prep: 5 },
+        // Beverages (cat 3)
+        { cat: 3, name: 'Fresh Lime Soda', desc: 'Refreshing lime and mint cooler (Sweet / Salted)', price: 90, isVeg: true, isVegan: true, prep: 5 },
+        { cat: 3, name: 'Mango Lassi', desc: 'Traditional sweet yogurt smoothie with Alphanso mango pulp', price: 130, isVeg: true, isVegan: false, prep: 5 },
+    ];
+    await MenuItem.insertMany(menuItemsData.map((item) => ({
         restaurantId: restaurant._id,
         categoryId: categories[item.cat]._id,
         name: item.name,
         description: item.desc,
         price: item.price,
         isAvailable: true,
-        prepTimeMinutes: 15,
+        prepTimeMinutes: item.prep,
         gstRate: 5,
+        isVeg: item.isVeg,
+        isVegan: item.isVegan,
     })));
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    await User.insertMany([
-        {
+    // 7. Create SuperAdmin & Restaurant Credentials
+    const defaultPasswordHash = await bcrypt.hash('password123', 10);
+    const adminPasswordHash = await bcrypt.hash('admin123', 10);
+    if (!existingSuperAdmin) {
+        await User.create({
             email: 'admin@smartwaitlist.com',
-            password: hashedPassword,
+            password: adminPasswordHash,
             name: 'Main Platform Admin',
             role: 'superadmin',
-        },
+        });
+    }
+    await User.insertMany([
         {
             restaurantId: restaurant._id,
             email: 'owner@spicegarden.com',
-            password: hashedPassword,
-            name: 'Rajesh Kumar',
+            password: defaultPasswordHash,
+            name: 'Rajesh Kumar (Owner)',
             role: 'owner',
         },
         {
             restaurantId: restaurant._id,
             email: 'staff@spicegarden.com',
-            password: hashedPassword,
-            name: 'Priya Sharma',
+            password: defaultPasswordHash,
+            name: 'Priya Sharma (Staff)',
             role: 'staff',
         },
         {
             restaurantId: restaurant._id,
             email: 'kitchen@spicegarden.com',
-            password: hashedPassword,
-            name: 'Chef Anand',
+            password: defaultPasswordHash,
+            name: 'Chef Anand (Kitchen)',
             role: 'kitchen',
         },
     ]);
-    console.log('[Auto-Seed] ✅ Clean database initialization complete! Spice Garden restaurant created.');
+    console.log('[Database-Reset] ✅ Database successfully reset with Spice Garden Fine Dining & structured menu!');
     return true;
 }
 export async function seedDemoSimulation(restaurantId) {
@@ -176,12 +188,10 @@ export async function seedDemoSimulation(restaurantId) {
         await Table.findByIdAndUpdate(tables[1]._id, { status: 'cleaning' });
         await Table.findByIdAndUpdate(tables[2]._id, { status: 'ready', currentQueueEntryId: createdEntries[2]._id });
         await Table.findByIdAndUpdate(tables[3]._id, { status: 'available' });
-        // Link assigned table to Vikram Malhotra
         await QueueEntry.findByIdAndUpdate(createdEntries[2]._id, { assignedTableId: tables[2]._id });
     }
     // 5. Create 2 realistic pre-orders
     if (items.length >= 2 && createdEntries.length >= 2) {
-        // Order 1: Confirmed
         const o1 = await Order.create({
             restaurantId: rId,
             queueEntryId: createdEntries[0]._id,
@@ -196,7 +206,6 @@ export async function seedDemoSimulation(restaurantId) {
             triggers: { tableReady: true, customerOnMyWay: false },
         });
         await QueueEntry.findByIdAndUpdate(createdEntries[0]._id, { preOrderId: o1._id });
-        // Order 2: Cooking In Progress
         const o2 = await Order.create({
             restaurantId: rId,
             queueEntryId: createdEntries[3]._id,
