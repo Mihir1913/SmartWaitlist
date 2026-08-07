@@ -467,7 +467,7 @@ export default function StaffPanel() {
                     <div
                       key={table._id}
                       className={`bg-white rounded-2xl shadow-sm p-5 border-2 transition-all duration-300
-                        hover:shadow-md group ${cfg.border} ${cfg.bg} ${cfg.ring}`}
+                        hover:shadow-md group ${assigned ? 'border-amber-400 bg-amber-50/30 ring-2 ring-amber-200/80' : `${cfg.border} ${cfg.bg} ${cfg.ring}`}`}
                     >
                       {/* ── Row 1: number + badge ── */}
                       <div className="flex items-center justify-between mb-3">
@@ -475,17 +475,19 @@ export default function StaffPanel() {
                           <span className="text-2xl font-extrabold text-stone-800 tracking-tight">
                             T{table.number}
                           </span>
-                          {table.status === 'ready' && (
+                          {(table.status === 'ready' || assigned) && (
                             <span className="relative flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
                             </span>
                           )}
                         </div>
                         <span
-                          className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${cfg.badge}`}
+                          className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${
+                            assigned ? 'bg-amber-100 text-amber-800 border border-amber-300' : cfg.badge
+                          }`}
                         >
-                          {cfg.label}
+                          {assigned ? `Reserved (${assigned.customer.name})` : cfg.label}
                         </span>
                       </div>
 
@@ -497,14 +499,14 @@ export default function StaffPanel() {
 
                       {/* ── Assigned guest pill ── */}
                       {assigned && (
-                        <div className="flex items-center gap-2 mt-2 mb-4 px-3 py-2 rounded-lg bg-brand-50 border border-brand-100">
-                          <UserCircle className="w-4 h-4 text-brand-600 shrink-0" />
+                        <div className="flex items-center gap-2 mt-2 mb-4 px-3 py-2 rounded-lg bg-amber-100/70 border border-amber-300">
+                          <UserCircle className="w-4 h-4 text-amber-700 shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-brand-800 truncate">
+                            <p className="text-sm font-bold text-amber-900 truncate">
                               {assigned.customer.name}
                             </p>
-                            <p className="text-[11px] text-brand-600">
-                              {assigned.partySize} guest{assigned.partySize > 1 ? 's' : ''}
+                            <p className="text-[11px] text-amber-700 font-semibold">
+                              {assigned.partySize} guest{assigned.partySize > 1 ? 's' : ''} • Table Assigned
                             </p>
                           </div>
                         </div>
@@ -512,7 +514,17 @@ export default function StaffPanel() {
 
                       {/* ── Action button ── */}
                       <div className="mt-4 min-h-[48px] flex items-stretch">
-                        {cfg.buttonLabel && cfg.nextStatus ? (
+                        {assigned ? (
+                          <button
+                            onClick={() =>
+                              updateStatus.mutate({ tableId: table._id, status: 'occupied' })
+                            }
+                            disabled={mutating}
+                            className="w-full text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl shadow transition"
+                          >
+                            {mutating ? 'Seating Guest…' : `Seat ${assigned.customer.name} (Mark Seated)`}
+                          </button>
+                        ) : cfg.buttonLabel && cfg.nextStatus ? (
                           <button
                             onClick={() =>
                               updateStatus.mutate({ tableId: table._id, status: cfg.nextStatus! })
@@ -668,7 +680,22 @@ export default function StaffPanel() {
                             </div>
 
                             {/* In-Dining Order Action Buttons for Staff */}
-                            <div className="flex items-center gap-2 pt-2 border-t border-stone-100 mt-2">
+                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-100 mt-2">
+                              {entry.assignedTableId && (
+                                <button
+                                  onClick={() => {
+                                    const targetTableId = typeof entry.assignedTableId === 'object' ? (entry.assignedTableId as any)._id : entry.assignedTableId;
+                                    const tableNum = typeof entry.assignedTableId === 'object' ? entry.assignedTableId.number : '';
+                                    updateStatus.mutate({ tableId: targetTableId, status: 'occupied' });
+                                    showToast(`Seated ${entry.customer.name} at Table T${tableNum}!`, 'success');
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition flex items-center gap-1 shadow-sm"
+                                >
+                                  <Armchair className="w-3 h-3 text-white" />
+                                  <span>Seat at T{typeof entry.assignedTableId === 'object' ? entry.assignedTableId.number : ''}</span>
+                                </button>
+                              )}
+
                               <button
                                 onClick={() => {
                                   setAddDishesEntry(entry);
