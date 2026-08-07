@@ -36,7 +36,7 @@ export async function createPreOrder(queueEntryId, items) {
         if (!menuItem || !menuItem.isAvailable)
             continue;
         const lineTotal = menuItem.price * item.qty;
-        const lineGst = (lineTotal * menuItem.gstRate) / 100;
+        const lineGst = (lineTotal * (menuItem.gstRate || 5)) / 100;
         subtotal += lineTotal;
         gst += lineGst;
         orderItems.push({
@@ -66,6 +66,32 @@ export async function createPreOrder(queueEntryId, items) {
     await evaluateDualTrigger(order._id.toString());
     emitToRestaurant(entry.restaurantId.toString(), 'order:created', { order, entry });
     emitRestaurantSync(entry.restaurantId.toString(), await getRestaurantSyncState(entry.restaurantId.toString()));
+    return order;
+}
+export async function addItemsToOrder(orderId, items) {
+    const order = await Order.findById(orderId);
+    if (!order)
+        throw new Error('Order not found');
+    for (const item of items) {
+        const menuItem = await MenuItem.findById(item.menuItemId);
+        if (!menuItem || !menuItem.isAvailable)
+            continue;
+        const lineTotal = menuItem.price * item.qty;
+        const lineGst = (lineTotal * (menuItem.gstRate || 5)) / 100;
+        order.items.push({
+            menuItemId: menuItem._id,
+            name: menuItem.name,
+            qty: item.qty,
+            price: menuItem.price,
+            notes: item.notes,
+        });
+        order.subtotal += lineTotal;
+        order.gst += lineGst;
+        order.total += lineTotal + lineGst;
+    }
+    await order.save();
+    emitToRestaurant(order.restaurantId.toString(), 'order:updated', { order });
+    emitRestaurantSync(order.restaurantId.toString(), await getRestaurantSyncState(order.restaurantId.toString()));
     return order;
 }
 export async function getKitchenOrders(restaurantId) {

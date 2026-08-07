@@ -5,6 +5,7 @@ import {
   markOrderReady,
   updateOrderStatus,
   evaluateDualTrigger,
+  addItemsToOrder,
 } from '../services/orderService.js';
 import { authMiddleware } from '../middleware/auth.js';
 
@@ -16,6 +17,20 @@ router.get('/:restaurantId/kitchen', authMiddleware, async (req, res) => {
     res.json({ orders });
   } catch {
     res.status(500).json({ error: 'Failed to fetch kitchen orders' });
+  }
+});
+
+router.post('/:orderId/add-items', authMiddleware, async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Please provide items array' });
+    }
+    const order = await addItemsToOrder(req.params.orderId as string, items);
+    res.json({ order, message: 'Items added to order successfully' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to add items to order';
+    res.status(400).json({ error: message });
   }
 });
 

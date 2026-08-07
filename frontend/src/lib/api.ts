@@ -449,4 +449,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  addOrderItems: (orderId: string, items: { menuItemId: string; qty: number; notes?: string }[]) =>
+    request<{ order: import('../types').Order; message: string }>(`/orders/${orderId}/add-items`, {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    }),
 };

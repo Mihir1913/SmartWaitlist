@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import PaymentModal from '../components/PaymentModal';
+import BillReceiptModal from '../components/BillReceiptModal';
 import type { QueueEntry, Order, MenuItem } from '../types';
 
 function formatJoinedTime(iso: string) {
@@ -213,6 +214,7 @@ export default function CustomerStatus() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showBillModal, setShowBillModal] = useState(false);
 
   const effectiveId = paramId || localStorage.getItem('customer_queue_id') || undefined;
 
@@ -436,6 +438,25 @@ export default function CustomerStatus() {
               queryClient.invalidateQueries({ queryKey: ['queueEntry', effectiveId] });
             }}
             onClose={() => setShowPayModal(false)}
+          />
+        )}
+
+        {/* Print / Download Bill Receipt PDF Button */}
+        {order && (
+          <button
+            onClick={() => setShowBillModal(true)}
+            className="w-full py-3 px-4 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-2xl shadow text-sm flex items-center justify-center gap-2 transition border border-stone-800"
+          >
+            <span>📄 Print / Download Digital Bill Invoice (PDF)</span>
+          </button>
+        )}
+
+        {showBillModal && order && (
+          <BillReceiptModal
+            restaurantName={restaurantName || 'Spice Garden Fine Dining'}
+            entry={entry}
+            order={order}
+            onClose={() => setShowBillModal(false)}
           />
         )}
 
