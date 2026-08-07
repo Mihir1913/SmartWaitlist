@@ -38,6 +38,11 @@ export async function createPreOrder(
   const entry = await QueueEntry.findById(queueEntryId);
   if (!entry) throw new Error('Queue entry not found');
 
+  if (entry.preOrderId) {
+    const existingOrderId = typeof entry.preOrderId === 'object' ? (entry.preOrderId as any)._id : entry.preOrderId;
+    return await addItemsToOrder(existingOrderId.toString(), items);
+  }
+
   const orderItems = [];
   let subtotal = 0;
   let gst = 0;

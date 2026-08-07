@@ -268,7 +268,11 @@ export default function CustomerStatus() {
     if (items.length === 0) return;
     setIsSubmittingOrder(true);
     try {
-      await api.preOrder(effectiveId!, items);
+      if (order?._id) {
+        await api.addOrderItems(order._id, items);
+      } else {
+        await api.preOrder(effectiveId!, items);
+      }
       setShowAddMenuModal(false);
       setCart({});
       setItemNotes({});
