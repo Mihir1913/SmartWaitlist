@@ -56,6 +56,9 @@ export interface QueueEntry {
   position: number;
   status: 'waiting' | 'notified' | 'on_my_way' | 'seated' | 'cancelled' | 'no_show';
   estimatedWaitMinutes: number;
+  depositAmount?: number;
+  isDepositPaid?: boolean;
+  depositPaymentId?: string;
   joinedAt: string;
   assignedTableId?: { number: string; status: string };
   assignedTableIds?: { number: string; status: string }[];
@@ -108,6 +111,9 @@ export interface Order {
   total: number;
   totalAmount?: number;
   status: 'draft' | 'confirmed' | 'cooking' | 'ready' | 'served' | 'completed';
+  paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentMethod?: 'razorpay' | 'stripe' | 'upi' | 'cash';
+  paymentId?: string;
   triggers: {
     tableReady: boolean;
     customerOnMyWay: boolean;

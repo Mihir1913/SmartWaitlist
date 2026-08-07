@@ -19,6 +19,19 @@ const orderSchema = new Schema({
         enum: ['draft', 'confirmed', 'cooking', 'ready', 'served', 'completed'],
         default: 'draft',
     },
+    paymentStatus: {
+        type: String,
+        enum: ['unpaid', 'pending', 'paid', 'failed', 'refunded'],
+        default: 'unpaid',
+        index: true,
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['razorpay', 'stripe', 'upi', 'cash'],
+        default: 'cash',
+    },
+    paymentId: { type: String, default: '' },
+    razorpayOrderId: { type: String, default: '' },
     triggers: {
         tableReady: { type: Boolean, default: false },
         customerOnMyWay: { type: Boolean, default: false },

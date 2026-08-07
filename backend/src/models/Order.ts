@@ -17,6 +17,10 @@ export interface IOrderDoc extends Document {
   gst: number;
   total: number;
   status: OrderStatus;
+  paymentStatus: 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentMethod?: 'razorpay' | 'stripe' | 'upi' | 'cash';
+  paymentId?: string;
+  razorpayOrderId?: string;
   triggers: {
     tableReady: boolean;
     customerOnMyWay: boolean;
@@ -47,6 +51,19 @@ const orderSchema = new Schema<IOrderDoc>(
       enum: ['draft', 'confirmed', 'cooking', 'ready', 'served', 'completed'],
       default: 'draft',
     },
+    paymentStatus: {
+      type: String,
+      enum: ['unpaid', 'pending', 'paid', 'failed', 'refunded'],
+      default: 'unpaid',
+      index: true,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['razorpay', 'stripe', 'upi', 'cash'],
+      default: 'cash',
+    },
+    paymentId: { type: String, default: '' },
+    razorpayOrderId: { type: String, default: '' },
     triggers: {
       tableReady: { type: Boolean, default: false },
       customerOnMyWay: { type: Boolean, default: false },

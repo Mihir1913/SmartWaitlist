@@ -149,6 +149,15 @@ function KitchenOrderCard({
                   T{qe.assignedTableId.number}
                 </span>
               )}
+              {order.paymentStatus === 'paid' ? (
+                <span className="font-bold text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                  🟢 PAID ONLINE
+                </span>
+              ) : (
+                <span className="font-bold text-[10px] text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/40">
+                  🔴 PAY AT SEATING
+                </span>
+              )}
             </p>
           </div>
         </div>

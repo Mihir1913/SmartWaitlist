@@ -8,6 +8,9 @@ export interface IQueueEntryDoc extends Document {
   position: number;
   status: QueueStatus;
   estimatedWaitMinutes: number;
+  depositAmount?: number;
+  isDepositPaid?: boolean;
+  depositPaymentId?: string;
   joinedAt: Date;
   notifiedAt?: Date;
   onMyWayAt?: Date;
@@ -32,6 +35,9 @@ const queueEntrySchema = new Schema<IQueueEntryDoc>(
       default: 'waiting',
     },
     estimatedWaitMinutes: { type: Number, default: 0 },
+    depositAmount: { type: Number, default: 0 },
+    isDepositPaid: { type: Boolean, default: false },
+    depositPaymentId: { type: String, default: '' },
     joinedAt: { type: Date, default: Date.now },
     notifiedAt: Date,
     onMyWayAt: Date,

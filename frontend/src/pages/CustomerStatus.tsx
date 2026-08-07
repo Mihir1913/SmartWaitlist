@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../lib/api';
+import PaymentModal from '../components/PaymentModal';
 import type { QueueEntry, Order, MenuItem } from '../types';
 
 function formatJoinedTime(iso: string) {
@@ -116,12 +117,12 @@ function StatusStepper({ status }: { status: QueueEntry['status'] }) {
   );
 }
 
-function OrderCookingProgress({ order }: { order: Order }) {
+function OrderTracker({ order, onPayClick }: { order: Order; onPayClick: () => void }) {
   const steps = [
-    { status: 'confirmed', label: 'Order Received', icon: ShoppingBag },
-    { status: 'cooking', label: 'Cooking in Kitchen', icon: UtensilsCrossed },
-    { status: 'ready', label: 'Food Ready at Table', icon: CheckCircle2 },
-    { status: 'served', label: 'Served & Enjoy!', icon: PartyPopper },
+    { status: 'confirmed', label: 'Confirmed', icon: Circle },
+    { status: 'cooking', label: 'Cooking', icon: UtensilsCrossed },
+    { status: 'ready', label: 'Ready', icon: CheckCircle2 },
+    { status: 'served', label: 'Served', icon: PartyPopper },
   ];
 
   const currentIdx = steps.findIndex((s) => s.status === order.status);
@@ -180,6 +181,23 @@ function OrderCookingProgress({ order }: { order: Order }) {
           </div>
         ))}
       </div>
+
+      {/* Payment Status Bar */}
+      <div className="pt-2 border-t border-stone-800 flex items-center justify-between">
+        {order.paymentStatus === 'paid' ? (
+          <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-3 py-1 rounded-full flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            Paid Online via UPI / Razorpay
+          </span>
+        ) : (
+          <button
+            onClick={onPayClick}
+            className="w-full py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 text-stone-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95"
+          >
+            💳 Pay ₹{order.totalAmount || order.total} Online Now
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -192,6 +210,7 @@ export default function CustomerStatus() {
   const [searchCode, setSearchCode] = useState('');
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
 
   const effectiveId = paramId || localStorage.getItem('customer_queue_id') || undefined;
 
@@ -403,7 +422,20 @@ export default function CustomerStatus() {
         {entry && <StatusStepper status={entry.status} />}
 
         {/* Order Cooking Progress Tracker (If Pre-Order Exists) */}
-        {order && <OrderCookingProgress order={order} />}
+        {order && <OrderTracker order={order} onPayClick={() => setShowPayModal(true)} />}
+
+        {showPayModal && order && (
+          <PaymentModal
+            type="preorder"
+            amount={order.totalAmount || order.total}
+            orderId={order._id}
+            onSuccess={() => {
+              setShowPayModal(false);
+              queryClient.invalidateQueries({ queryKey: ['queueEntry', effectiveId] });
+            }}
+            onClose={() => setShowPayModal(false)}
+          />
+        )}
 
         {/* Add / Edit Pre-Order Dishes Button */}
         {!isSeated && !isCancelled && !isNoShow && (

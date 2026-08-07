@@ -417,4 +417,22 @@ export const api = {
     request<{ message: string }>(`/restaurants/my-restaurant/staff/${id}`, {
       method: 'DELETE',
     }),
+
+  createPaymentOrder: (data: { type: 'preorder' | 'deposit'; orderId?: string; queueEntryId?: string; amount: number; paymentMethod?: string }) =>
+    request<{ session: { razorpayOrderId: string; amount: number; currency: string; keyId: string } }>('/payments/create-order', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  verifyPayment: (data: { type: 'preorder' | 'deposit'; orderId?: string; queueEntryId?: string; paymentId: string; paymentMethod?: string }) =>
+    request<{ result: any }>('/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  mockPay: (data: { type: 'preorder' | 'deposit'; orderId?: string; queueEntryId?: string; amount: number; paymentMethod?: string }) =>
+    request<{ success: boolean; paymentId: string; result: any }>('/payments/mock-pay', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };

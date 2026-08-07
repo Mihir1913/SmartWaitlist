@@ -16,6 +16,7 @@ import orderRoutes from './routes/orders.js';
 import analyticsRoutes from './routes/analytics.js';
 import whatsappRoutes from './routes/whatsapp.js';
 import superadminRoutes from './routes/superadmin.js';
+import paymentRoutes from './routes/payments.js';
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -50,6 +51,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/webhooks/whatsapp', whatsappRoutes);
 app.use('/api/superadmin', superadminRoutes);
+app.use('/api/payments', paymentRoutes);
 async function start() {
     await connectDB();
     await runSeed(false);
