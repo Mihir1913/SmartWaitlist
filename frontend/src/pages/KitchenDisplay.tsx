@@ -234,8 +234,9 @@ export default function KitchenDisplay() {
   const { data: menuData, refetch: refetchMenu } = useQuery({
     queryKey: ['restaurantMenuKds', restaurantId],
     queryFn: () => api.getRestaurant('spice-garden'),
-    enabled: showStockOutModal,
   });
+
+  const restaurantName = menuData?.restaurant?.name || 'Spice Garden';
 
   const menuCategories = menuData?.menu ?? [];
 
@@ -306,7 +307,8 @@ export default function KitchenDisplay() {
           </div>
           <div>
             <h1 className="font-display font-extrabold text-xl text-white flex items-center gap-2">
-              Kitchen Display System (KDS)
+              <span className="text-orange-400 font-black">{restaurantName}</span>
+              <span className="text-stone-400 font-medium font-display text-base">— Kitchen Display System (KDS)</span>
               <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
                 Live Sync Active
               </span>

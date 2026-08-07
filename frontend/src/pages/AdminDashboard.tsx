@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import QRCodeModal from '../components/QRCodeModal';
 import {
   Users,
@@ -88,6 +89,13 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<TabKey>('overview');
   const [queueFilter, setQueueFilter] = useState('all');
 
+  const { data: myRest } = useQuery({
+    queryKey: ['myRestaurantAdminHeader', user?.restaurantId],
+    queryFn: () => api.getMyRestaurant().catch(() => api.getRestaurant('spice-garden')),
+    enabled: !!user,
+  });
+  const currentRestaurantName = myRest?.restaurant?.name || 'Spice Garden';
+
   const { state, isLoading } = useRestaurantState();
   const stats = state?.stats;
   const queueEntries = state?.queue ?? [];
@@ -148,8 +156,9 @@ export default function AdminDashboard() {
               <Store className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div>
-              <h1 className="font-display text-xl font-bold text-surface-900">
-                Restaurant Admin Panel
+              <h1 className="font-display text-xl font-bold text-surface-900 flex items-center gap-2">
+                <span className="text-brand-600 font-extrabold">{currentRestaurantName}</span>
+                <span className="text-stone-400 font-medium text-base">— Owner Admin Panel</span>
               </h1>
               <p className="text-xs text-stone-500">Live Management & Operations</p>
             </div>
