@@ -12,10 +12,10 @@ import {
   Clock,
   MapPin,
   Utensils,
-  Info,
   Copy,
   Check,
   ExternalLink,
+  Leaf,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import type { MenuItem } from '../types';
@@ -31,6 +31,8 @@ export default function JoinPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [dietaryFilter, setDietaryFilter] = useState<'all' | 'veg' | 'nonveg' | 'vegan'>('all');
   const [copiedLink, setCopiedLink] = useState(false);
 
   const { data } = useQuery({
@@ -83,8 +85,16 @@ export default function JoinPage() {
     });
   };
 
+  const handleNoteChange = (id: string, note: string) => {
+    setItemNotes((prev) => ({ ...prev, [id]: note }));
+  };
+
   const handlePreOrder = async () => {
-    const items = Object.entries(cart).map(([menuItemId, qty]) => ({ menuItemId, qty }));
+    const items = Object.entries(cart).map(([menuItemId, qty]) => ({
+      menuItemId,
+      qty,
+      notes: itemNotes[menuItemId] || '',
+    }));
     if (items.length > 0) {
       await api.preOrder(entryId, items);
     }
@@ -98,69 +108,64 @@ export default function JoinPage() {
 
   if (!restaurant && data === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-stone-500">Loading...</div>
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-      <header className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
-        <Link to="/" className="p-2 rounded-lg hover:bg-white/80 transition">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-lg text-surface-900">{restaurant?.name}</h1>
-            {restaurant?.cuisine && (
-              <span className="text-[10px] font-semibold bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
-                {restaurant.cuisine}
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-stone-500 flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-            {restaurant?.address}
+  if (!restaurant) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="card p-8 text-center max-w-sm">
+          <h2 className="text-xl font-bold font-display text-surface-900 mb-2">
+            Restaurant Not Found
+          </h2>
+          <p className="text-stone-500 text-sm mb-4">
+            The queue you're looking for doesn't exist or is currently unavailable.
           </p>
+          <Link to="/" className="btn-primary inline-block text-sm">
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const directTrackUrl = `${window.location.origin}${window.location.pathname.includes('/SmartWaitlist') ? '/SmartWaitlist' : ''}/status/${entryId}`;
+  const shortTrackingCode = entryId ? `#${entryId.slice(-6).toUpperCase()}` : '';
+
+  return (
+    <div className="min-h-screen bg-stone-50">
+      {/* Top Banner */}
+      <header className="bg-white border-b border-stone-200">
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center gap-3">
+          <button
+            onClick={() => navigate('/')}
+            className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200 transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="font-display text-lg font-bold text-surface-900 leading-snug">
+              {restaurant.name}
+            </h1>
+            <p className="text-xs text-stone-500">{restaurant.address}</p>
+          </div>
         </div>
       </header>
 
-      {/* Restaurant Overview Info Card */}
-      <div className="max-w-lg mx-auto px-4 mb-4">
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-4 shadow-sm space-y-2">
-          {restaurant?.description && (
-            <p className="text-xs text-stone-600 leading-relaxed italic">{restaurant.description}</p>
-          )}
-          <div className="flex flex-wrap items-center gap-4 text-xs text-stone-500 pt-1 border-t border-stone-100">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-brand-600" />
-              Hours: {restaurant?.openingHours || '11:00 AM - 11:00 PM'}
-            </span>
-            {restaurant?.whatsappPhone && (
-              <span className="flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5 text-brand-600" />
-                Contact: {restaurant.whatsappPhone}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <main className="max-w-lg mx-auto px-4 pb-8">
+      <main className="max-w-md mx-auto p-4 space-y-6">
         {step === 'form' && (
-          <div className="animate-slide-up">
-            <div className="card p-6 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="font-semibold">Join the Waitlist</h2>
-                  <p className="text-sm text-stone-500">Get updates on WhatsApp</p>
-                </div>
-              </div>
+          <div className="space-y-4 animate-fade-in">
+            {/* Queue Info Card */}
+            <div className="card p-6 text-center bg-gradient-to-br from-brand-600 to-brand-700 text-white border-none shadow-md">
+              <h2 className="font-display text-xl font-bold">Join the Waiting List</h2>
+              <p className="text-brand-100 text-xs mt-1">Get real-time updates directly on your phone</p>
+            </div>
 
+            {/* Form */}
+            <div className="card p-6">
               <form onSubmit={handleJoin} className="space-y-4">
                 <div>
                   <label className="label">Your Name</label>
@@ -168,13 +173,15 @@ export default function JoinPage() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
                     <input
                       className="input pl-11"
+                      type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your name"
+                      placeholder="Enter your full name"
                       required
                     />
                   </div>
                 </div>
+
                 <div>
                   <label className="label">Phone Number</label>
                   <div className="relative">
@@ -190,6 +197,7 @@ export default function JoinPage() {
                     />
                   </div>
                 </div>
+
                 <div>
                   <label className="label">Party Size</label>
                   <div className="flex items-center gap-3">
@@ -224,148 +232,207 @@ export default function JoinPage() {
                 </button>
               </form>
             </div>
-
-            {restaurant?.whatsappJoinUrl && (
-              <a
-                href={restaurant.whatsappJoinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="card p-4 flex items-center gap-3 hover:border-green-300 transition"
-              >
-                <MessageCircle className="w-6 h-6 text-green-600" />
-                <div className="flex-1">
-                  <div className="font-medium text-sm">Or join via WhatsApp</div>
-                  <div className="text-xs text-stone-500">Tap to open WhatsApp directly</div>
-                </div>
-              </a>
-            )}
           </div>
         )}
 
         {step === 'menu' && (
-          <div className="animate-slide-up">
-            <div className="card p-4 mb-4 bg-brand-50 border-brand-200">
-              <p className="text-sm text-brand-800">
-                <ShoppingBag className="w-4 h-4 inline mr-1" />
+          <div className="animate-slide-up space-y-4">
+            <div className="card p-4 bg-brand-50 border-brand-200">
+              <p className="text-sm text-brand-800 flex items-center gap-2 font-medium">
+                <ShoppingBag className="w-4 h-4 text-brand-600" />
                 Pre-order while you wait — food ready when you're seated!
               </p>
             </div>
 
-            {menu.map((category) => (
-              <div key={category._id} className="mb-6">
-                <h3 className="font-display font-semibold text-lg mb-3">{category.name}</h3>
-                <div className="space-y-2">
-                  {category.items.map((item: MenuItem) => (
-                    <div
-                      key={item._id}
-                      className={`card p-4 flex items-center gap-3 cursor-pointer transition ${
-                        cart[item._id] ? 'border-brand-400 bg-brand-50/50' : 'hover:border-stone-300'
-                      }`}
-                      onClick={() => toggleCart(item)}
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-stone-500">{item.description}</div>
-                        <div className="text-brand-600 font-semibold mt-1">₹{item.price}</div>
-                      </div>
-                      {cart[item._id] ? (
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            className="w-8 h-8 rounded-lg bg-white border border-stone-200 font-bold"
-                            onClick={() => updateQty(item._id, -1)}
-                          >
-                            −
-                          </button>
-                          <span className="w-6 text-center font-bold">{cart[item._id]}</span>
-                          <button
-                            className="w-8 h-8 rounded-lg bg-brand-600 text-white font-bold"
-                            onClick={() => updateQty(item._id, 1)}
-                          >
-                            +
-                          </button>
+            {/* Dietary Filter Buttons */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {[
+                { id: 'all', label: 'All Items' },
+                { id: 'veg', label: '🟢 Veg Only' },
+                { id: 'nonveg', label: '🔴 Non-Veg' },
+                { id: 'vegan', label: '🌱 Vegan' },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setDietaryFilter(f.id as any)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition ${
+                    dietaryFilter === f.id
+                      ? 'bg-stone-900 text-white border-stone-900 shadow'
+                      : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {menu.map((category) => {
+              const filteredItems = category.items.filter((item: MenuItem) => {
+                if (dietaryFilter === 'all') return true;
+                if (dietaryFilter === 'veg') return item.isVeg || item.isVegan;
+                if (dietaryFilter === 'nonveg') return !item.isVeg && !item.isVegan;
+                if (dietaryFilter === 'vegan') return item.isVegan;
+                return true;
+              });
+
+              if (filteredItems.length === 0) return null;
+
+              return (
+                <div key={category._id} className="mb-6">
+                  <h3 className="font-display font-semibold text-lg mb-3 text-stone-900">{category.name}</h3>
+                  <div className="space-y-3">
+                    {filteredItems.map((item: MenuItem) => (
+                      <div
+                        key={item._id}
+                        className={`card p-4 space-y-2 cursor-pointer transition ${
+                          cart[item._id] ? 'border-brand-500 bg-brand-50/40 ring-1 ring-brand-500' : 'hover:border-stone-300'
+                        }`}
+                        onClick={() => toggleCart(item)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-1.5">
+                              {item.isVeg ? (
+                                <span className="w-3.5 h-3.5 rounded border border-emerald-600 flex items-center justify-center p-0.5" title="Vegetarian">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                                </span>
+                              ) : item.isVegan ? (
+                                <span title="Vegan">
+                                  <Leaf className="w-3.5 h-3.5 text-emerald-500" />
+                                </span>
+                              ) : (
+                                <span className="w-3.5 h-3.5 rounded border border-red-600 flex items-center justify-center p-0.5" title="Non-Vegetarian">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                                </span>
+                              )}
+                              <span className="font-semibold text-stone-900">{item.name}</span>
+                            </div>
+                            {item.description && <p className="text-xs text-stone-500 mt-0.5">{item.description}</p>}
+                            <p className="text-brand-600 font-bold text-sm mt-1">₹{item.price}</p>
+                          </div>
+
+                          {cart[item._id] ? (
+                            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                className="w-8 h-8 rounded-lg bg-white border border-stone-200 font-bold hover:bg-stone-100"
+                                onClick={() => updateQty(item._id, -1)}
+                              >
+                                −
+                              </button>
+                              <span className="w-6 text-center font-bold text-stone-900">{cart[item._id]}</span>
+                              <button
+                                className="w-8 h-8 rounded-lg bg-white border border-stone-200 font-bold hover:bg-stone-100"
+                                onClick={() => updateQty(item._id, 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : (
+                            <button className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs shrink-0">
+                              + Add
+                            </button>
+                          )}
                         </div>
-                      ) : (
-                        <button className="btn-secondary text-sm py-2 px-3">Add</button>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* Special Instructions Note per item */}
+                        {cart[item._id] && (
+                          <div className="pt-2 border-t border-brand-100" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              placeholder="Special request (e.g. Less spicy, Extra cheese)..."
+                              value={itemNotes[item._id] || ''}
+                              onChange={(e) => handleNoteChange(item._id, e.target.value)}
+                              className="w-full text-xs bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-brand-500 text-stone-800"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Fixed Cart Footer */}
+            {Object.keys(cart).length > 0 && (
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-stone-200 shadow-xl z-20">
+                <div className="max-w-md mx-auto flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-stone-500 font-medium">
+                      {Object.values(cart).reduce((a, b) => a + b, 0)} items selected
+                    </p>
+                    <p className="text-lg font-bold text-surface-900">₹{cartTotal}</p>
+                  </div>
+                  <button onClick={handlePreOrder} className="btn-primary flex-1 text-base">
+                    Confirm Pre-Order →
+                  </button>
                 </div>
               </div>
-            ))}
+            )}
 
-            <div className="sticky bottom-4 space-y-2">
-              {cartTotal > 0 && (
-                <div className="card p-3 text-center font-semibold">
-                  Pre-order total: ₹{cartTotal.toFixed(0)}
-                </div>
-              )}
-              <button onClick={handlePreOrder} className="btn-primary w-full">
-                {Object.keys(cart).length > 0 ? 'Confirm Pre-Order' : 'Skip — Join Queue Only'}
+            <div className="pt-4 text-center">
+              <button
+                onClick={() => setStep('success')}
+                className="text-xs font-semibold text-stone-500 hover:underline"
+              >
+                Skip Pre-Order for Now
               </button>
             </div>
           </div>
         )}
 
         {step === 'success' && (
-          <div className="card p-8 text-center animate-slide-up space-y-6">
+          <div className="animate-fade-in text-center space-y-6 py-6">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-              <CheckCircle2 className="w-8 h-8" />
+              <CheckCircle2 className="w-10 h-10" />
             </div>
 
             <div>
-              <h2 className="font-display text-2xl font-bold text-surface-900">You're in the Queue!</h2>
-              <p className="text-stone-500 text-sm mt-1">
-                We've reserved your spot. Save your tracking details to check live position & cooking progress.
-              </p>
+              <h2 className="font-display text-2xl font-bold text-surface-900">You're in Line!</h2>
+              <p className="text-stone-500 text-sm mt-1">We'll alert you on WhatsApp when your table is ready.</p>
             </div>
 
-            {/* Tracking ID Box */}
-            <div className="bg-stone-900 text-white rounded-2xl p-5 border border-stone-800 space-y-3 shadow-xl">
-              <div className="text-xs uppercase tracking-wider font-semibold text-stone-400">
-                Your Order Tracking ID
-              </div>
-              <div className="font-mono text-3xl font-extrabold text-orange-400">
-                #{entryId ? entryId.slice(-6).toUpperCase() : 'QUEUED'}
-              </div>
-              <div className="text-xs text-stone-400 font-mono">
-                Entry ID: {entryId}
+            {/* Direct Order Tracking ID Box */}
+            <div className="bg-gradient-to-br from-stone-900 to-stone-950 text-white rounded-2xl p-5 border border-stone-800 space-y-3 shadow-xl">
+              <div className="text-xs text-stone-400 font-semibold uppercase tracking-wider">Your Live Order Tracking Code</div>
+              <div className="font-mono text-3xl font-extrabold text-amber-400 tracking-wider">
+                {shortTrackingCode}
               </div>
 
               <button
-                type="button"
                 onClick={() => {
-                  const url = `${window.location.origin}${window.location.pathname.includes('/SmartWaitlist') ? '/SmartWaitlist' : ''}/status/${entryId}`;
-                  navigator.clipboard.writeText(url);
+                  navigator.clipboard.writeText(directTrackUrl);
                   setCopiedLink(true);
                   setTimeout(() => setCopiedLink(false), 2500);
                 }}
-                className="w-full py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition border border-stone-700"
+                className="w-full py-2.5 px-4 bg-stone-800 hover:bg-stone-700 text-xs font-bold rounded-xl text-stone-200 transition flex items-center justify-center gap-2 border border-stone-700"
               >
                 {copiedLink ? (
                   <>
                     <Check className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400 font-bold">Tracking Link Copied!</span>
+                    <span className="text-emerald-400 font-bold">Direct Link Copied to Clipboard!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 text-orange-400" />
+                    <Copy className="w-4 h-4 text-amber-400" />
                     <span>Copy Direct Tracking Link</span>
                   </>
                 )}
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3 pt-2">
               <button
                 onClick={() => navigate(`/status/${entryId}`)}
-                className="btn-primary w-full py-3 text-base flex items-center justify-center gap-2 shadow-lg"
+                className="btn-primary w-full text-base flex items-center justify-center gap-2"
               >
                 <span>Track My Live Order & Status</span>
                 <ExternalLink className="w-4 h-4" />
               </button>
-              <button onClick={() => navigate('/')} className="btn-secondary w-full py-2.5">
-                Back to Home Page
-              </button>
+
+              <p className="text-xs text-stone-400">
+                Bookmark or save your tracking link to check your cooking status anytime!
+              </p>
             </div>
           </div>
         )}

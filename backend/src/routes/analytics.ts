@@ -6,7 +6,8 @@ const router = Router();
 
 router.get('/:restaurantId', authMiddleware, requireRole('owner', 'staff'), async (req, res) => {
   try {
-    const stats = await getDashboardStats(req.params.restaurantId as string);
+    const range = (req.query.range as string) || 'today';
+    const stats = await getDashboardStats(req.params.restaurantId as string, range);
     res.json({ stats });
   } catch {
     res.status(500).json({ error: 'Failed to fetch analytics' });

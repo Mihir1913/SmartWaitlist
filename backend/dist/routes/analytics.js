@@ -4,7 +4,8 @@ import { authMiddleware, requireRole } from '../middleware/auth.js';
 const router = Router();
 router.get('/:restaurantId', authMiddleware, requireRole('owner', 'staff'), async (req, res) => {
     try {
-        const stats = await getDashboardStats(req.params.restaurantId);
+        const range = req.query.range || 'today';
+        const stats = await getDashboardStats(req.params.restaurantId, range);
         res.json({ stats });
     }
     catch {

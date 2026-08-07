@@ -1,99 +1,26 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Hash, Clock, Users, Phone, CheckCircle2, Circle,
-  Footprints, PartyPopper, XCircle, AlertTriangle,
-  Armchair, ShoppingBag, Loader2, ArrowLeft, Search, Flame, Sparkles
+  ArrowLeft,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Footprints,
+  UtensilsCrossed,
+  Circle,
+  PartyPopper,
+  Search,
+  Plus,
+  ShoppingBag,
+  Leaf,
+  X,
 } from 'lucide-react';
 import { api } from '../lib/api';
-import { useSocket } from '../hooks/useSocket';
-import type { QueueEntry, Order } from '../types';
+import type { QueueEntry, Order, MenuItem } from '../types';
 
-interface EntryResponse {
-  entry: QueueEntry & { restaurantId?: string };
-  restaurant?: { name: string; slug: string; id: string };
-  order?: Order;
-}
-
-function formatJoinedTime(d: string): string {
-  return new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-}
-
-function maskPhone(p: string): string {
-  return p.length < 4 ? p : '--------' + p.slice(-4);
-}
-
-function OrderCookingProgress({ order }: { order?: Order }) {
-  if (!order) return null;
-
-  const steps = [
-    { key: 'confirmed', label: 'Order Received', icon: CheckCircle2, color: 'text-blue-500' },
-    { key: 'cooking', label: 'Cooking in Kitchen', icon: Flame, color: 'text-amber-500' },
-    { key: 'ready', label: 'Food Ready', icon: Sparkles, color: 'text-emerald-500' },
-    { key: 'completed', label: 'Served to Table', icon: PartyPopper, color: 'text-purple-500' },
-  ];
-
-  const currentIdx = steps.findIndex((s) => s.key === order.status);
-  const activeIdx = currentIdx >= 0 ? currentIdx : 0;
-
-  return (
-    <div className="card p-5 bg-gradient-to-br from-stone-900 to-stone-950 text-white border border-stone-800 space-y-4">
-      <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-        <div className="flex items-center gap-2">
-          <ShoppingBag className="w-5 h-5 text-orange-400" />
-          <h3 className="font-display font-bold text-base text-white">Pre-Order Cooking Tracker</h3>
-        </div>
-        <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
-          {order.status}
-        </span>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="grid grid-cols-4 gap-2 text-center pt-2">
-        {steps.map((step, idx) => {
-          const Icon = step.icon;
-          const isDone = idx <= activeIdx;
-          const isActive = idx === activeIdx;
-
-          return (
-            <div key={step.key} className="flex flex-col items-center gap-1.5">
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
-                  isDone
-                    ? 'bg-orange-500 border-orange-400 text-stone-950 font-bold shadow-lg shadow-orange-500/20'
-                    : 'bg-stone-900 border-stone-800 text-stone-600'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-              </div>
-              <span
-                className={`text-[11px] font-semibold ${
-                  isActive ? 'text-orange-400' : isDone ? 'text-stone-300' : 'text-stone-600'
-                }`}
-              >
-                {step.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Order Items */}
-      <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800/80 space-y-1 text-xs text-stone-300">
-        {order.items.map((item, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <span>{item.qty}x {item.name}</span>
-            <span className="text-stone-400 font-mono">₹{item.price * item.qty}</span>
-          </div>
-        ))}
-        <div className="pt-2 border-t border-stone-800 flex justify-between font-bold text-white text-sm">
-          <span>Total Pre-Order:</span>
-          <span className="text-orange-400">₹{order.total}</span>
-        </div>
-      </div>
-    </div>
-  );
+function formatJoinedTime(iso: string) {
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function Skeleton() {
@@ -178,16 +105,7 @@ function StatusStepper({ status }: { status: QueueEntry['status'] }) {
                   <Circle className="w-4 h-4 text-stone-300" />
                 )}
               </div>
-              <span
-                className={
-                  'text-xs font-semibold mt-2 transition-colors ' +
-                  (st === 'done'
-                    ? 'text-green-700'
-                    : st === 'active' && !isTerm
-                    ? 'text-brand-700'
-                    : 'text-stone-400')
-                }
-              >
+              <span className="text-[11px] font-medium text-stone-600 mt-2 text-center leading-tight">
                 {step.label}
               </span>
             </div>
@@ -198,106 +116,170 @@ function StatusStepper({ status }: { status: QueueEntry['status'] }) {
   );
 }
 
+function OrderCookingProgress({ order }: { order: Order }) {
+  const steps = [
+    { status: 'confirmed', label: 'Order Received', icon: ShoppingBag },
+    { status: 'cooking', label: 'Cooking in Kitchen', icon: UtensilsCrossed },
+    { status: 'ready', label: 'Food Ready at Table', icon: CheckCircle2 },
+    { status: 'served', label: 'Served & Enjoy!', icon: PartyPopper },
+  ];
+
+  const currentIdx = steps.findIndex((s) => s.status === order.status);
+
+  return (
+    <div className="card p-5 bg-gradient-to-br from-stone-900 to-stone-950 text-white border-stone-800 space-y-4 shadow-xl">
+      <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+        <div className="flex items-center gap-2">
+          <UtensilsCrossed className="w-4 h-4 text-amber-400" />
+          <h3 className="font-display font-bold text-sm text-white">Pre-Order Cooking Progress</h3>
+        </div>
+        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-lg border border-amber-800/40">
+          ₹{order.totalAmount || order.total}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1 relative text-center">
+        {steps.map((step, idx) => {
+          const isDone = idx <= currentIdx;
+          const isCurrent = idx === currentIdx;
+          const Icon = step.icon;
+
+          return (
+            <div key={step.status} className="flex flex-col items-center gap-1.5 z-10">
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                  isCurrent
+                    ? 'bg-amber-500 text-stone-950 font-bold ring-4 ring-amber-500/20 shadow-lg scale-110'
+                    : isDone
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-stone-800 text-stone-500 border border-stone-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+              </div>
+              <span
+                className={`text-[10px] leading-tight font-medium ${
+                  isCurrent ? 'text-amber-400 font-bold' : isDone ? 'text-stone-300' : 'text-stone-500'
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Order Item List */}
+      <div className="bg-stone-900/90 rounded-xl p-3 border border-stone-800 space-y-1.5 text-xs text-stone-300">
+        {order.items.map((item, i) => (
+          <div key={i} className="flex items-center justify-between">
+            <span>
+              {item.qty}x {item.name} {item.notes ? <span className="text-[10px] text-amber-400 font-italic">({item.notes})</span> : ''}
+            </span>
+            <span className="font-mono text-stone-400">₹{item.price * item.qty}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function CustomerStatus() {
-  const { entryId: urlEntryId } = useParams<{ entryId: string }>();
+  const { entryId: paramId } = useParams<{ entryId?: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [confirmCancel, setConfirmCancel] = useState(false);
+
   const [searchCode, setSearchCode] = useState('');
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [showAddMenuModal, setShowAddMenuModal] = useState(false);
 
-  // Fallback to localStorage saved customer session
-  const activeEntryId = urlEntryId || localStorage.getItem('customer_queue_id') || '';
-
-  const fetchEntry = useCallback(async (): Promise<EntryResponse> => {
-    if (!activeEntryId) throw new Error('NO_ID');
-    try {
-      return await api.getQueueEntry(activeEntryId);
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('404')) {
-        throw new Error('NOT_FOUND');
-      }
-      throw err;
-    }
-  }, [activeEntryId]);
+  const effectiveId = paramId || localStorage.getItem('customer_queue_id') || undefined;
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['queueEntry', activeEntryId],
-    queryFn: fetchEntry,
-    enabled: !!activeEntryId,
-    refetchInterval: 5000,
-    retry: 1,
+    queryKey: ['queueEntry', effectiveId],
+    queryFn: () => api.getQueueEntry(effectiveId!),
+    enabled: !!effectiveId,
+    refetchInterval: 5000, // Poll every 5s for real-time status updates
   });
 
   const entry = data?.entry;
-  const order = data?.order;
   const restaurantName = data?.restaurant?.name;
-  const restaurantId = entry?.restaurantId ?? data?.restaurant?.id;
+  const restaurantSlug = data?.restaurant?.slug;
+  const order = data?.order;
 
-  const socketCb = useRef((_ev: string, _d: unknown) => {
-    queryClient.invalidateQueries({ queryKey: ['queueEntry', activeEntryId] });
+  // Query restaurant menu for the pre-order modal
+  const { data: menuData } = useQuery({
+    queryKey: ['restaurantMenu', restaurantSlug],
+    queryFn: () => api.getRestaurant(restaurantSlug!),
+    enabled: !!restaurantSlug && showAddMenuModal,
   });
-  socketCb.current = (_ev, _d) => {
-    queryClient.invalidateQueries({ queryKey: ['queueEntry', activeEntryId] });
-  };
-  useSocket(restaurantId, (ev, d) => socketCb.current(ev, d));
 
-  const cancelMut = useMutation({
-    mutationFn: () => api.cancelQueue(activeEntryId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['queueEntry', activeEntryId] });
-      setConfirmCancel(false);
-      localStorage.removeItem('customer_queue_id');
-    },
-  });
+  const menuCategories = menuData?.menu ?? [];
+
+  // State for Add Pre-Order Modal
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const omwMut = useMutation({
-    mutationFn: () => api.onMyWay(activeEntryId!),
+    mutationFn: () => api.onMyWay(effectiveId!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['queueEntry', activeEntryId] });
+      queryClient.invalidateQueries({ queryKey: ['queueEntry', effectiveId] });
     },
   });
 
-  const [displayWait, setDisplayWait] = useState<number | null>(null);
-  useEffect(() => {
-    if (entry?.estimatedWaitMinutes != null && entry.status === 'waiting')
-      setDisplayWait(entry.estimatedWaitMinutes);
-  }, [entry?.estimatedWaitMinutes, entry?.status]);
+  const cancelMut = useMutation({
+    mutationFn: () => api.cancelQueue(effectiveId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['queueEntry', effectiveId] });
+      setConfirmCancel(false);
+    },
+  });
 
-  useEffect(() => {
-    if (displayWait == null || displayWait <= 0) return;
-    const t = setInterval(() => setDisplayWait((p) => (p != null && p > 0 ? p - 1 : 0)), 60000);
-    return () => clearInterval(t);
-  }, [displayWait]);
+  const handleAddPreOrderSubmit = async () => {
+    const items = Object.entries(cart).map(([menuItemId, qty]) => ({
+      menuItemId,
+      qty,
+      notes: itemNotes[menuItemId] || '',
+    }));
+    if (items.length === 0) return;
+    setIsSubmittingOrder(true);
+    try {
+      await api.preOrder(effectiveId!, items);
+      setShowAddMenuModal(false);
+      setCart({});
+      setItemNotes({});
+      queryClient.invalidateQueries({ queryKey: ['queueEntry', effectiveId] });
+    } catch (err) {
+      alert('Failed to submit pre-order');
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  };
 
-  // If no entry ID exists in URL or localStorage, render a clean search form
-  if (!activeEntryId) {
+  const displayWait = entry?.estimatedWaitMinutes;
+
+  if (!effectiveId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-amber-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full card p-8 text-center space-y-6 shadow-xl border border-stone-200">
-          <div className="w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center text-white mx-auto shadow-lg shadow-brand-600/30">
-            <Search className="w-7 h-7 stroke-[2.5]" />
+      <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center p-4">
+        <div className="card p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
+          <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mx-auto">
+            <Search className="w-6 h-6" />
           </div>
-          <div>
-            <h2 className="font-display text-2xl font-bold text-surface-900">Track Order & Waitlist</h2>
-            <p className="text-sm text-stone-500 mt-1">
-              Enter your 10-digit phone number or Queue Entry ID to check live position
-            </p>
-          </div>
+          <h2 className="font-display text-xl font-bold text-surface-900">Track Your Waitlist Status</h2>
+          <p className="text-stone-500 text-xs">Enter your 10-digit phone number or short tracking code</p>
 
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (searchCode.trim()) {
-                localStorage.setItem('customer_queue_id', searchCode.trim());
-                navigate(`/status/${searchCode.trim()}`);
-              }
+              if (searchCode.trim()) navigate(`/status/${encodeURIComponent(searchCode.trim())}`);
             }}
-            className="space-y-4"
+            className="space-y-3"
           >
             <input
               type="text"
               required
-              placeholder="e.g. 9876543210 or Entry ID"
+              placeholder="e.g. 9876543210 or Tracking Code"
               value={searchCode}
               onChange={(e) => setSearchCode(e.target.value)}
               className="input text-center text-lg font-semibold"
@@ -306,10 +288,6 @@ export default function CustomerStatus() {
               Track Order Status
             </button>
           </form>
-
-          <div className="pt-4 border-t border-stone-100 text-xs text-stone-400">
-            Smart Waitlist • Real-Time Queue Tracker
-          </div>
         </div>
       </div>
     );
@@ -317,41 +295,11 @@ export default function CustomerStatus() {
 
   if (isLoading) return <Skeleton />;
 
-  const notFound = error instanceof Error && error.message === 'NOT_FOUND';
-  if (isError || !entry) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center px-4">
-        <div className="card p-8 max-w-sm text-center space-y-4 shadow-xl">
-          <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-            <XCircle className="w-6 h-6" />
-          </div>
-          <h2 className="font-display text-xl font-bold text-stone-900">
-            {notFound ? 'Queue Entry Not Found' : 'Error Loading Status'}
-          </h2>
-          <p className="text-sm text-stone-500">
-            {notFound
-              ? 'This queue entry may have expired or been removed.'
-              : 'Failed to fetch queue entry details.'}
-          </p>
-          <button
-            onClick={() => {
-              localStorage.removeItem('customer_queue_id');
-              navigate('/');
-            }}
-            className="btn-primary w-full"
-          >
-            Back to Restaurants
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const isSeated = entry.status === 'seated';
-  const isCancelled = entry.status === 'cancelled';
-  const isNoShow = entry.status === 'no_show';
-  const isNotified = entry.status === 'notified';
-  const isOnMyWay = entry.status === 'on_my_way';
+  const isSeated = entry?.status === 'seated';
+  const isCancelled = entry?.status === 'cancelled';
+  const isNoShow = entry?.status === 'no_show';
+  const isNotified = entry?.status === 'notified';
+  const isOnMyWay = entry?.status === 'on_my_way';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-50 via-stone-50 to-white pb-12">
@@ -370,7 +318,7 @@ export default function CustomerStatus() {
             </div>
           </div>
           <span className="text-xs font-mono font-bold bg-stone-100 text-stone-700 px-2.5 py-1 rounded-lg">
-            #{entry.position}
+            #{entry?.position}
           </span>
         </div>
       </header>
@@ -396,29 +344,26 @@ export default function CustomerStatus() {
               <h2 className="font-display text-2xl font-bold text-red-900">
                 {isCancelled ? 'Entry Cancelled' : 'Marked as No-Show'}
               </h2>
-              <p className="text-sm text-stone-500">
-                This queue reservation is no longer active.
-              </p>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="inline-flex flex-col items-center justify-center w-36 h-36 rounded-full bg-gradient-to-br from-brand-500 to-amber-600 text-white shadow-2xl shadow-brand-500/30 mx-auto">
                 <span className="text-xs uppercase tracking-wider font-semibold opacity-90">Position</span>
-                <span className="font-display text-5xl font-black">{entry.position}</span>
+                <span className="font-display text-5xl font-black">{entry?.position}</span>
                 <span className="text-[11px] font-medium opacity-90">in line</span>
               </div>
 
               <div>
                 <h2 className="font-display text-xl font-bold text-surface-900">
-                  {entry.customer.name}
+                  {entry?.customer.name}
                 </h2>
                 <p className="text-xs text-stone-500 font-mono mt-0.5">
-                  Party of {entry.partySize} guests • Joined at {formatJoinedTime(entry.joinedAt.toString())}
+                  Party of {entry?.partySize} guests • Joined at {formatJoinedTime(entry?.joinedAt.toString() || '')}
                 </p>
               </div>
 
               {/* Wait Time Estimate */}
-              {entry.status === 'waiting' && displayWait != null && (
+              {entry?.status === 'waiting' && displayWait != null && (
                 <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5 flex items-center justify-center gap-3 text-amber-900">
                   <Clock className="w-5 h-5 text-amber-600 shrink-0" />
                   <span className="text-sm font-semibold">
@@ -431,7 +376,7 @@ export default function CustomerStatus() {
               {isNotified && (
                 <div className="space-y-3 pt-2">
                   <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-emerald-900 text-sm">
-                    <strong>Your Table is Ready!</strong> Please tap below to let staff know you are heading over.
+                    <strong>Your Table is Ready!</strong> Tap below to let staff know you are heading over.
                   </div>
                   <button
                     onClick={() => omwMut.mutate()}
@@ -455,10 +400,21 @@ export default function CustomerStatus() {
         </div>
 
         {/* Stepper Status */}
-        <StatusStepper status={entry.status} />
+        {entry && <StatusStepper status={entry.status} />}
 
         {/* Order Cooking Progress Tracker (If Pre-Order Exists) */}
         {order && <OrderCookingProgress order={order} />}
+
+        {/* Add / Edit Pre-Order Dishes Button */}
+        {!isSeated && !isCancelled && !isNoShow && (
+          <button
+            onClick={() => setShowAddMenuModal(true)}
+            className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-bold rounded-2xl shadow text-sm flex items-center justify-center gap-2 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{order ? 'Add More Dishes to Pre-Order' : 'Pre-Order Dishes While Waiting'}</span>
+          </button>
+        )}
 
         {/* Cancel Queue Entry */}
         {!isSeated && !isCancelled && !isNoShow && (
@@ -493,6 +449,93 @@ export default function CustomerStatus() {
           </div>
         )}
       </main>
+
+      {/* Add Pre-Order Modal */}
+      {showAddMenuModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-sm">
+          <div className="bg-white border border-stone-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative animate-fade-in max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-orange-500" />
+                <h3 className="font-display font-bold text-lg text-surface-900">Pre-Order Dishes</h3>
+              </div>
+              <button onClick={() => setShowAddMenuModal(false)} className="text-stone-400 hover:text-stone-900 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {menuCategories.map((cat) => (
+                <div key={cat._id}>
+                  <h4 className="font-bold text-xs uppercase text-stone-400 tracking-wider mb-2">{cat.name}</h4>
+                  <div className="space-y-2">
+                    {cat.items.map((item: MenuItem) => (
+                      <div key={item._id} className="p-3 border border-stone-200 rounded-xl space-y-2 bg-stone-50">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-sm text-stone-900 flex items-center gap-1">
+                              {item.isVeg ? <span className="text-emerald-600">🟢</span> : <span className="text-red-600">🔴</span>}
+                              {item.name}
+                            </span>
+                            <p className="text-xs text-brand-600 font-bold">₹{item.price}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setCart((prev) => {
+                                  const qty = (prev[item._id] || 0) - 1;
+                                  if (qty <= 0) {
+                                    const next = { ...prev };
+                                    delete next[item._id];
+                                    return next;
+                                  }
+                                  return { ...prev, [item._id]: qty };
+                                });
+                              }}
+                              className="w-7 h-7 rounded bg-white border border-stone-300 font-bold"
+                            >
+                              −
+                            </button>
+                            <span className="w-5 text-center font-bold text-xs">{cart[item._id] || 0}</span>
+                            <button
+                              onClick={() => {
+                                setCart((prev) => ({ ...prev, [item._id]: (prev[item._id] || 0) + 1 }));
+                              }}
+                              className="w-7 h-7 rounded bg-white border border-stone-300 font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {cart[item._id] > 0 && (
+                          <input
+                            type="text"
+                            placeholder="Notes (e.g. Less spicy)..."
+                            value={itemNotes[item._id] || ''}
+                            onChange={(e) => setItemNotes((prev) => ({ ...prev, [item._id]: e.target.value }))}
+                            className="w-full text-xs bg-white border border-stone-200 rounded px-2 py-1"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+              <button
+                onClick={handleAddPreOrderSubmit}
+                disabled={isSubmittingOrder || Object.keys(cart).length === 0}
+                className="btn-primary w-full py-3 text-sm font-bold"
+              >
+                {isSubmittingOrder ? 'Submitting...' : `Confirm Pre-Order (${Object.values(cart).reduce((a, b) => a + b, 0)} items)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

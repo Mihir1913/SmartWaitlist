@@ -79,6 +79,8 @@ export interface MenuItem {
   isAvailable: boolean;
   prepTimeMinutes: number;
   gstRate?: number;
+  isVeg?: boolean;
+  isVegan?: boolean;
 }
 
 export interface MenuCategory {
@@ -98,11 +100,13 @@ export interface StaffUser {
 
 export interface Order {
   _id: string;
+  orderNumber?: string;
   queueEntryId: QueueEntry | string;
   items: { name: string; qty: number; price: number; notes?: string }[];
   subtotal: number;
   gst: number;
   total: number;
+  totalAmount?: number;
   status: 'draft' | 'confirmed' | 'cooking' | 'ready' | 'served' | 'completed';
   triggers: {
     tableReady: boolean;
@@ -124,6 +128,7 @@ export interface DashboardStats {
   tableStats: { total: number; ready: number; occupied: number };
   recentEntries: QueueEntry[];
   hourlyData: { _id: number; count: number }[];
+  topSellingItems?: { _id: string; totalQty: number; totalRevenue: number }[];
   kpis: {
     extraCoversPerHour: number;
     avgWaitReduction: number;

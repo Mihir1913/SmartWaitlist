@@ -131,6 +131,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const message = data?.error || data?.message || text || 'Request failed';
+    if (res.status === 401 && !path.includes('/auth/login')) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.href = `${window.location.pathname.includes('/SmartWaitlist') ? '/SmartWaitlist' : ''}/login`;
+      }
+    }
     if (res.status === 429) {
       throw new Error('Too many requests. Please wait a moment and try again.');
     }
