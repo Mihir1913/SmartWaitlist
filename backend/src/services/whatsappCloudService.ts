@@ -101,9 +101,11 @@ export class WhatsAppService {
         const data = response.data;
         const messageId = data?.messages?.[0]?.id;
         return { messageId, responseData: data };
-      } catch (err: unknown) {
-        lastError = err instanceof Error ? err : new Error('Meta API request failed');
-        console.warn(`[WhatsAppCloudService] Attempt ${attempt}/${retries} failed:`, lastError.message);
+      } catch (err: any) {
+        const metaErrorMsg = err?.response?.data?.error?.message || err?.message || 'Meta API request failed';
+        const metaErrorCode = err?.response?.data?.error?.code;
+        lastError = new Error(`Meta Graph API Error [Code ${metaErrorCode || 'Unknown'}]: ${metaErrorMsg}`);
+        console.warn(`[WhatsAppCloudService] Attempt ${attempt}/${retries} failed: ${lastError.message}`);
         if (attempt < retries) {
           await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
         }
