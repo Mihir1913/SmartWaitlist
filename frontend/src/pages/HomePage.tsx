@@ -14,15 +14,18 @@ import {
   Utensils,
   ChevronRight,
   Armchair,
-  CheckCircle,
+  CheckCircle2,
   Building2,
   Zap,
   CreditCard,
   BarChart3,
   Printer,
   ShieldCheck,
-  CheckCircle2,
-  Award,
+  Check,
+  Crown,
+  Star,
+  HelpCircle,
+  X,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import QRCodeModal from '../components/QRCodeModal';
@@ -52,6 +55,7 @@ export default function HomePage() {
   const [qrRestaurant, setQrRestaurant] = useState<PublicRestaurant | null>(null);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [annualBilling, setAnnualBilling] = useState(false);
 
   useEffect(() => {
     api
@@ -234,6 +238,208 @@ export default function HomePage() {
                 <p className="text-xs text-stone-600 leading-relaxed">{f.desc}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ────────────────────────── GLASSMORPHISM PRICING TABLE ────────────────────────── */}
+        <section className="relative overflow-hidden bg-stone-950 text-white rounded-3xl p-8 sm:p-14 border border-stone-800 shadow-2xl space-y-12">
+          {/* Ambient Glow Orbs */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-amber-500/15 to-orange-500/0 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-gradient-to-tr from-brand-600/15 to-purple-600/0 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Section Header */}
+          <div className="text-center max-w-2xl mx-auto space-y-4 relative z-10">
+            <span className="text-xs font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 px-4 py-1.5 rounded-full border border-amber-700/60 inline-flex items-center gap-1.5 shadow-inner">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Transparent Subscription Plans
+            </span>
+            <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight">
+              Simple, Predictable Pricing for Every Dining Space
+            </h2>
+            <p className="text-stone-400 text-sm leading-relaxed">
+              No hidden fees or per-transaction commissions. Upgrade or cancel anytime.
+            </p>
+
+            {/* Monthly / Annual Toggle */}
+            <div className="pt-2 flex items-center justify-center gap-3">
+              <span className={`text-xs font-bold ${!annualBilling ? 'text-white' : 'text-stone-400'}`}>Monthly</span>
+              <button
+                onClick={() => setAnnualBilling(!annualBilling)}
+                className="w-14 h-7 rounded-full bg-stone-800 p-1 transition relative border border-stone-700"
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition transform ${
+                    annualBilling ? 'translate-x-7' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <span className={`text-xs font-bold flex items-center gap-1.5 ${annualBilling ? 'text-amber-400' : 'text-stone-400'}`}>
+                Annual <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-black uppercase">Save 20%</span>
+              </span>
+            </div>
+          </div>
+
+          {/* 3 Glassmorphism Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+            {/* Tier 1: Starter */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-3xl p-8 space-y-6 flex flex-col justify-between transition duration-300 hover:-translate-y-1 shadow-xl">
+              <div className="space-y-4">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-stone-300">
+                  <Utensils className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-white">Boutique Bistro</h3>
+                  <p className="text-xs text-stone-400">Ideal for small cafes, bakeries & bistros</p>
+                </div>
+
+                <div className="flex items-baseline gap-1 pt-2">
+                  <span className="text-3xl sm:text-4xl font-black font-display text-white">
+                    ₹{annualBilling ? '1,199' : '1,499'}
+                  </span>
+                  <span className="text-xs text-stone-400">/ month</span>
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-stone-300 pt-2 border-t border-white/10">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Up to 10 Dining Tables</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>WhatsApp QR Waitlist</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Up to 200 Waiting Guests / mo</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Digital Menu Browsing</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-stone-500">
+                    <X className="w-4 h-4 shrink-0" />
+                    <span className="line-through">Pre-Seating Dish Orders</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setShowInquiryModal(true)}
+                className="w-full py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/15 active:scale-95"
+              >
+                Choose Boutique Plan
+              </button>
+            </div>
+
+            {/* Tier 2: Pro Restaurant (POPULAR - Highlighted Glass) */}
+            <div className="bg-gradient-to-b from-orange-500/15 via-amber-500/10 to-stone-900/90 backdrop-blur-2xl border-2 border-orange-500/60 rounded-3xl p-8 space-y-6 flex flex-col justify-between transition duration-300 hover:-translate-y-1.5 shadow-2xl shadow-orange-500/15 relative">
+              {/* Popular Badge */}
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-stone-950 font-black text-[10px] uppercase tracking-widest px-4 py-1 rounded-full shadow-lg flex items-center gap-1">
+                <Crown className="w-3 h-3 fill-stone-950" /> Most Popular Choice
+              </div>
+
+              <div className="space-y-4 pt-1">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-stone-950 shadow-md">
+                  <Zap className="w-5 h-5 fill-stone-950" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
+                    Pro Restaurant
+                  </h3>
+                  <p className="text-xs text-amber-200/80">For high-volume restaurants & fine dining</p>
+                </div>
+
+                <div className="flex items-baseline gap-1 pt-2">
+                  <span className="text-3xl sm:text-4xl font-black font-display text-amber-400">
+                    ₹{annualBilling ? '2,399' : '2,999'}
+                  </span>
+                  <span className="text-xs text-stone-400">/ month</span>
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-stone-200 pt-2 border-t border-orange-500/20">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    <strong className="text-white">Unlimited Dining Tables & Queues</strong>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    <strong className="text-white">Meta WhatsApp Cloud API</strong>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Pre-Seating Cooking Pre-Orders</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Live Drag & Drop Kitchen KDS</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Online UPI & Razorpay Deposits</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Printable Acrylic QR Standees</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setShowInquiryModal(true)}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-black text-xs transition shadow-lg shadow-orange-500/25 active:scale-95"
+              >
+                Inquire & Get Pro Plan
+              </button>
+            </div>
+
+            {/* Tier 3: Enterprise & Chains */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-3xl p-8 space-y-6 flex flex-col justify-between transition duration-300 hover:-translate-y-1 shadow-xl">
+              <div className="space-y-4">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-white">Multi-Chain Enterprise</h3>
+                  <p className="text-xs text-stone-400">For multi-location groups & franchises</p>
+                </div>
+
+                <div className="flex items-baseline gap-1 pt-2">
+                  <span className="text-3xl sm:text-4xl font-black font-display text-white">
+                    ₹{annualBilling ? '4,799' : '5,999'}
+                  </span>
+                  <span className="text-xs text-stone-400">/ month</span>
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-stone-300 pt-2 border-t border-white/10">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>Multi-Branch SuperAdmin Access</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>Dedicated Account Manager</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>Custom WhatsApp Template Approval</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>POS / ERP Custom Integration</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>99.9% Server Uptime SLA</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setShowInquiryModal(true)}
+                className="w-full py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/15 active:scale-95"
+              >
+                Contact Enterprise Sales
+              </button>
+            </div>
           </div>
         </section>
 
