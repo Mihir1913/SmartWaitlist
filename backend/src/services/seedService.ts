@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { Restaurant } from '../models/Restaurant.js';
 import { Table } from '../models/Table.js';
@@ -18,13 +19,172 @@ export async function clearDummyData() {
   return true;
 }
 
+const ahmedabadRestaurants = [
+  {
+    name: 'Agashiye',
+    slug: 'agashiye',
+    address: 'The House of MG, Bhadra Road, Ahmedabad',
+    whatsappPhone: '919876543001',
+    description: 'Award-winning heritage rooftop restaurant serving authentic Gujarati Thali.',
+    openingHours: '12:00 PM - 3:30 PM, 7:00 PM - 10:30 PM',
+    cuisine: 'Gujarati',
+    location: { lat: 23.0263, lng: 72.5813 },
+    settings: { avgTurnoverMinutes: 60, maxQueueSize: 50, preOrderEnabled: true },
+    menu: [
+      { cat: 'Farsan', items: [{ name: 'Khaman Dhokla', desc: 'Steamed gram flour snack', price: 150, prep: 10 }] },
+      { cat: 'Main Course', items: [{ name: 'Undhiyu', desc: 'Mixed vegetable dish', price: 350, prep: 20 }, { name: 'Puran Poli', desc: 'Sweet flatbread', price: 120, prep: 15 }] },
+      { cat: 'Desserts', items: [{ name: 'Basundi', desc: 'Sweetened thick milk', price: 180, prep: 5 }] }
+    ]
+  },
+  {
+    name: 'Vishalla',
+    slug: 'vishalla',
+    address: 'Opp. APMC Market, Vasna, Ahmedabad',
+    whatsappPhone: '919876543002',
+    description: 'Village-themed traditional dining experience with cultural performances.',
+    openingHours: '7:00 PM - 11:00 PM',
+    cuisine: 'Traditional Gujarati',
+    location: { lat: 23.0039, lng: 72.5414 },
+    settings: { avgTurnoverMinutes: 90, maxQueueSize: 100, preOrderEnabled: false },
+    menu: [
+      { cat: 'Starters', items: [{ name: 'Muthiya', desc: 'Steamed spiced dumplings', price: 140, prep: 10 }] },
+      { cat: 'Mains', items: [{ name: 'Bajra no Rotlo', desc: 'Millet flatbread with white butter', price: 90, prep: 10 }, { name: 'Sev Tameta', desc: 'Tomato curry with crispy sev', price: 210, prep: 15 }] },
+      { cat: 'Desserts', items: [{ name: 'Mohanthal', desc: 'Gram flour fudge', price: 160, prep: 5 }] }
+    ]
+  },
+  {
+    name: 'Swati Snacks',
+    slug: 'swati-snacks',
+    address: 'Law Garden, Ellisbridge, Ahmedabad',
+    whatsappPhone: '919876543003',
+    description: 'Iconic spot for traditional regional snacks in a modern setting.',
+    openingHours: '11:00 AM - 10:45 PM',
+    cuisine: 'Street Food & Snacks',
+    location: { lat: 23.0238, lng: 72.5638 },
+    settings: { avgTurnoverMinutes: 45, maxQueueSize: 60, preOrderEnabled: true },
+    menu: [
+      { cat: 'Signatures', items: [{ name: 'Panki Chatni', desc: 'Rice pancake steamed in banana leaf', price: 200, prep: 15 }, { name: 'Fada Ni Khichdi', desc: 'Broken wheat and dal porridge', price: 220, prep: 15 }] },
+      { cat: 'Street Food', items: [{ name: 'Pani Puri', desc: 'Crispy puris with tangy water', price: 90, prep: 5 }] },
+      { cat: 'Drinks', items: [{ name: 'Sugarcane Juice', desc: 'Freshly pressed with ginger and lemon', price: 110, prep: 5 }] }
+    ]
+  },
+  {
+    name: 'Rajwadu',
+    slug: 'rajwadu',
+    address: 'Near Jivraj Tolnaka, Malav Talav, Ahmedabad',
+    whatsappPhone: '919876543004',
+    description: 'Royal Rajasthani and Gujarati dining in a majestic courtyard setting.',
+    openingHours: '7:00 PM - 11:00 PM',
+    cuisine: 'Rajasthani & Gujarati',
+    location: { lat: 23.0035, lng: 72.5358 },
+    settings: { avgTurnoverMinutes: 75, maxQueueSize: 80, preOrderEnabled: false },
+    menu: [
+      { cat: 'Appetizers', items: [{ name: 'Kachori', desc: 'Stuffed fried pastry', price: 130, prep: 10 }] },
+      { cat: 'Main Course', items: [{ name: 'Dal Bati Churma', desc: 'Classic Rajasthani combination', price: 380, prep: 20 }, { name: 'Gatte ki Sabzi', desc: 'Gram flour dumplings in curd curry', price: 280, prep: 15 }] },
+      { cat: 'Desserts', items: [{ name: 'Malpua', desc: 'Sweet pancakes with rabdi', price: 190, prep: 10 }] }
+    ]
+  },
+  {
+    name: 'Patang Hotel',
+    slug: 'patang-hotel',
+    address: 'Ashram Road, Ahmedabad',
+    whatsappPhone: '919876543005',
+    description: 'Ahmedabad’s famous revolving restaurant with panoramic city views.',
+    openingHours: '7:00 PM - 11:00 PM',
+    cuisine: 'Multi-Cuisine Buffet',
+    location: { lat: 23.0298, lng: 72.5714 },
+    settings: { avgTurnoverMinutes: 90, maxQueueSize: 40, preOrderEnabled: false },
+    menu: [
+      { cat: 'Soups', items: [{ name: 'Tomato Dhania Shorba', desc: 'Spiced tomato soup', price: 180, prep: 10 }] },
+      { cat: 'Mains', items: [{ name: 'Paneer Lababdar', desc: 'Cottage cheese in rich gravy', price: 380, prep: 15 }, { name: 'Veg Hakka Noodles', desc: 'Indo-Chinese style noodles', price: 290, prep: 15 }] },
+      { cat: 'Desserts', items: [{ name: 'Ice Cream Sundae', desc: 'Vanilla with chocolate sauce and nuts', price: 220, prep: 5 }] }
+    ]
+  },
+  {
+    name: 'Tomato\'s',
+    slug: 'tomatos',
+    address: 'C.G. Road, Navrangpura, Ahmedabad',
+    whatsappPhone: '919876543006',
+    description: 'Retro American diner serving Mexican, American, and Continental.',
+    openingHours: '12:00 PM - 3:00 PM, 7:00 PM - 11:00 PM',
+    cuisine: 'Mexican & American',
+    location: { lat: 23.0365, lng: 72.5574 },
+    settings: { avgTurnoverMinutes: 60, maxQueueSize: 70, preOrderEnabled: true },
+    menu: [
+      { cat: 'Starters', items: [{ name: 'Nachos Grande', desc: 'Tortilla chips with cheese and salsa', price: 320, prep: 10 }] },
+      { cat: 'Mains', items: [{ name: 'Enchiladas', desc: 'Baked corn tortillas in sauce', price: 390, prep: 20 }, { name: 'Mac & Cheese', desc: 'Classic cheesy macaroni', price: 350, prep: 15 }] },
+      { cat: 'Drinks', items: [{ name: 'Mocktail Blue Lagoon', desc: 'Refreshing blue curacao drink', price: 180, prep: 5 }] }
+    ]
+  },
+  {
+    name: 'Sasuji Dining Hall',
+    slug: 'sasuji',
+    address: 'C.G. Road, Navrangpura, Ahmedabad',
+    whatsappPhone: '919876543007',
+    description: 'Premium AC dining hall known for unlimited delicious Gujarati thalis.',
+    openingHours: '11:00 AM - 3:00 PM, 7:00 PM - 10:30 PM',
+    cuisine: 'Gujarati Thali',
+    location: { lat: 23.0335, lng: 72.5562 },
+    settings: { avgTurnoverMinutes: 50, maxQueueSize: 90, preOrderEnabled: false },
+    menu: [
+      { cat: 'Thali', items: [{ name: 'Unlimited Gujarati Thali', desc: 'Full thali with sweets, farsan, veg, roti, dal, rice', price: 400, prep: 5 }] },
+      { cat: 'Extras', items: [{ name: 'Extra Shrikhand', desc: 'Sweet strained yogurt', price: 120, prep: 5 }] }
+    ]
+  },
+  {
+    name: 'Gordhan Thal',
+    slug: 'gordhan-thal',
+    address: 'S.G. Highway, Bodakdev, Ahmedabad',
+    whatsappPhone: '919876543008',
+    description: 'Grand traditional thali restaurant serving a feast fit for royalty.',
+    openingHours: '11:00 AM - 3:30 PM, 7:00 PM - 11:00 PM',
+    cuisine: 'Gujarati & Rajasthani',
+    location: { lat: 23.0381, lng: 72.5118 },
+    settings: { avgTurnoverMinutes: 60, maxQueueSize: 120, preOrderEnabled: false },
+    menu: [
+      { cat: 'Thali', items: [{ name: 'Premium Thali', desc: 'Elaborate traditional meal', price: 450, prep: 5 }] },
+      { cat: 'Beverages', items: [{ name: 'Chaas', desc: 'Spiced buttermilk', price: 50, prep: 5 }] }
+    ]
+  },
+  {
+    name: 'Mocha',
+    slug: 'mocha',
+    address: 'Bodakdev, Ahmedabad',
+    whatsappPhone: '919876543009',
+    description: 'Trendy cafe offering global comfort food, coffees, and decadent desserts.',
+    openingHours: '11:00 AM - 12:00 AM',
+    cuisine: 'Cafe & Continental',
+    location: { lat: 23.0360, lng: 72.5152 },
+    settings: { avgTurnoverMinutes: 75, maxQueueSize: 50, preOrderEnabled: true },
+    menu: [
+      { cat: 'Coffee', items: [{ name: 'Cappuccino', desc: 'Classic espresso with frothy milk', price: 210, prep: 5 }] },
+      { cat: 'Mains', items: [{ name: 'Penne Alfredo', desc: 'Pasta in creamy cheese sauce', price: 380, prep: 15 }, { name: 'Farmhouse Pizza', desc: 'Thin crust veg pizza', price: 420, prep: 20 }] },
+      { cat: 'Desserts', items: [{ name: 'Chocolate Avalanche', desc: 'Signature chocolate dessert', price: 320, prep: 10 }] }
+    ]
+  },
+  {
+    name: 'Manek Chowk Eatery',
+    slug: 'manek-chowk',
+    address: 'Manek Chowk, Old City, Ahmedabad',
+    whatsappPhone: '919876543010',
+    description: 'Famous night street food market known for pav bhaji and cheese sandwiches.',
+    openingHours: '8:00 PM - 2:00 AM',
+    cuisine: 'Street Food',
+    location: { lat: 23.0232, lng: 72.5855 },
+    settings: { avgTurnoverMinutes: 30, maxQueueSize: 150, preOrderEnabled: true },
+    menu: [
+      { cat: 'Sandwiches', items: [{ name: 'Ghughra Sandwich', desc: 'Spicy layered grilled sandwich', price: 180, prep: 10 }, { name: 'Pineapple Cheese Sandwich', desc: 'Sweet and savory delight', price: 160, prep: 10 }] },
+      { cat: 'Bhaji Pav', items: [{ name: 'Cheese Pav Bhaji', desc: 'Spicy mixed veg curry with buttery buns', price: 220, prep: 10 }] },
+      { cat: 'Desserts', items: [{ name: 'Jamun Shots', desc: 'Fresh blackberry juice with salt rim', price: 120, prep: 5 }] }
+    ]
+  }
+];
+
 export async function runSeed(force = true) {
   console.log('[Database-Reset] Preserving SuperAdmin while wiping all old restaurant data...');
 
-  // 1. Preserve existing superadmin user if present
   const existingSuperAdmin = await User.findOne({ role: 'superadmin' });
 
-  // 2. Wipe old data
   await Promise.all([
     Restaurant.deleteMany({}),
     Table.deleteMany({}),
@@ -35,110 +195,6 @@ export async function runSeed(force = true) {
     Order.deleteMany({}),
   ]);
 
-  // 3. Create fresh production restaurant
-  const restaurant = await Restaurant.create({
-    name: 'Spice Garden Fine Dining',
-    slug: 'spice-garden',
-    address: '42 MG Road, Indiranagar, Bangalore',
-    whatsappPhone: '919876543210',
-    description: 'Authentic Indian Cuisine, Mughlai Delicacies & Fine Dining Experience',
-    openingHours: '11:00 AM - 11:00 PM',
-    cuisine: 'North Indian & Mughlai',
-    location: { lat: 12.9784, lng: 77.6408 },
-    settings: {
-      avgTurnoverMinutes: 45,
-      maxQueueSize: 50,
-      preOrderEnabled: true,
-    },
-  });
-
-  await Restaurant.insertMany([
-    {
-      name: 'Truffles Burger Joint',
-      slug: 'truffles-koramangala',
-      address: 'Koramangala 5th Block, Bangalore',
-      whatsappPhone: '919876543211',
-      description: 'Legendary burgers, steaks and shakes.',
-      openingHours: '11:00 AM - 11:00 PM',
-      cuisine: 'American & Fast Food',
-      location: { lat: 12.9352, lng: 77.6245 },
-      settings: { avgTurnoverMinutes: 30, maxQueueSize: 50, preOrderEnabled: false },
-    },
-    {
-      name: 'Toit Brewpub',
-      slug: 'toit-indiranagar',
-      address: '100 Feet Road, Indiranagar, Bangalore',
-      whatsappPhone: '919876543212',
-      description: 'Craft beers and wood-fired pizzas.',
-      openingHours: '12:00 PM - 01:00 AM',
-      cuisine: 'Continental & Pub Food',
-      location: { lat: 12.9798, lng: 77.6406 },
-      settings: { avgTurnoverMinutes: 90, maxQueueSize: 100, preOrderEnabled: true },
-    }
-  ]);
-
-  // 4. Create 8 clean tables all in 'available' status
-  const tables = [
-    { restaurantId: restaurant._id, number: 'T1', capacity: 2, status: 'available' },
-    { restaurantId: restaurant._id, number: 'T2', capacity: 2, status: 'available' },
-    { restaurantId: restaurant._id, number: 'T3', capacity: 4, status: 'available' },
-    { restaurantId: restaurant._id, number: 'T4', capacity: 4, status: 'available' },
-    { restaurantId: restaurant._id, number: 'T5', capacity: 4, status: 'available' },
-    { restaurantId: restaurant._id, number: 'T6', capacity: 6, status: 'available' },
-    { restaurantId: restaurant._id, number: 'T7', capacity: 6, status: 'available' },
-    { restaurantId: restaurant._id, number: 'T8', capacity: 8, status: 'available' },
-  ];
-  await Table.insertMany(tables);
-
-  // 5. Create 4 structured menu categories
-  const categories = await MenuCategory.insertMany([
-    { restaurantId: restaurant._id, name: 'Starters & Appetizers', sortOrder: 1 },
-    { restaurantId: restaurant._id, name: 'Main Course', sortOrder: 2 },
-    { restaurantId: restaurant._id, name: 'Desserts & Sweets', sortOrder: 3 },
-    { restaurantId: restaurant._id, name: 'Beverages & Shakes', sortOrder: 4 },
-  ]);
-
-  // 6. Create rich menu items with dietary badges (Veg, Non-Veg, Vegan)
-  const menuItemsData = [
-    // Starters (cat 0)
-    { cat: 0, name: 'Paneer Tikka', desc: 'Grilled cottage cheese marinated in aromatic spices', price: 280, isVeg: true, isVegan: false, prep: 15 },
-    { cat: 0, name: 'Chicken Tikka', desc: 'Juicy tender chicken bites grilled in charcoal tandoor', price: 340, isVeg: false, isVegan: false, prep: 15 },
-    { cat: 0, name: 'Crispy Corn', desc: 'Golden fried sweet corn tossed with herbs and lemon', price: 220, isVeg: true, isVegan: true, prep: 10 },
-    { cat: 0, name: 'Hara Bhara Kabab', desc: 'Pan-fried spinach and green pea patties', price: 240, isVeg: true, isVegan: false, prep: 12 },
-
-    // Main Course (cat 1)
-    { cat: 1, name: 'Butter Chicken', desc: 'Tender chicken pieces cooked in rich creamy tomato butter gravy', price: 390, isVeg: false, isVegan: false, prep: 20 },
-    { cat: 1, name: 'Paneer Butter Masala', desc: 'Cottage cheese cubes cooked in velvety rich gravy', price: 320, isVeg: true, isVegan: false, prep: 18 },
-    { cat: 1, name: 'Dal Makhani', desc: 'Slow-cooked black lentils finished with cream and butter', price: 270, isVeg: true, isVegan: false, prep: 15 },
-    { cat: 1, name: 'Veg Dum Biryani', desc: 'Fragrant basmati rice layered with seasonal vegetables and spices', price: 290, isVeg: true, isVegan: false, prep: 20 },
-    { cat: 1, name: 'Chicken Dum Biryani', desc: 'Hyderabadi style aromatic chicken dum biryani', price: 360, isVeg: false, isVegan: false, prep: 20 },
-    { cat: 1, name: 'Garlic Naan', desc: 'Freshly baked tandoori bread topped with garlic and butter', price: 70, isVeg: true, isVegan: false, prep: 5 },
-
-    // Desserts (cat 2)
-    { cat: 2, name: 'Gulab Jamun', desc: 'Warm milk dumplings soaked in cardamom sugar syrup', price: 130, isVeg: true, isVegan: false, prep: 5 },
-    { cat: 2, name: 'Rasmalai', desc: 'Soft cottage cheese disks in chilled saffron milk', price: 160, isVeg: true, isVegan: false, prep: 5 },
-
-    // Beverages (cat 3)
-    { cat: 3, name: 'Fresh Lime Soda', desc: 'Refreshing lime and mint cooler (Sweet / Salted)', price: 90, isVeg: true, isVegan: true, prep: 5 },
-    { cat: 3, name: 'Mango Lassi', desc: 'Traditional sweet yogurt smoothie with Alphanso mango pulp', price: 130, isVeg: true, isVegan: false, prep: 5 },
-  ];
-
-  await MenuItem.insertMany(
-    menuItemsData.map((item) => ({
-      restaurantId: restaurant._id,
-      categoryId: categories[item.cat]._id,
-      name: item.name,
-      description: item.desc,
-      price: item.price,
-      isAvailable: true,
-      prepTimeMinutes: item.prep,
-      gstRate: 5,
-      isVeg: item.isVeg,
-      isVegan: item.isVegan,
-    }))
-  );
-
-  // 7. Create SuperAdmin & Restaurant Credentials
   const defaultPasswordHash = await bcrypt.hash('password123', 10);
   const adminPasswordHash = await bcrypt.hash(config.superAdminPassword, 10);
 
@@ -151,130 +207,72 @@ export async function runSeed(force = true) {
     });
   }
 
-  await User.insertMany([
-    {
+  console.log(`[Database-Reset] Seeding ${ahmedabadRestaurants.length} Ahmedabad restaurants...`);
+
+  for (const rData of ahmedabadRestaurants) {
+    const restaurant = await Restaurant.create({
+      name: rData.name,
+      slug: rData.slug,
+      address: rData.address,
+      whatsappPhone: rData.whatsappPhone,
+      description: rData.description,
+      openingHours: rData.openingHours,
+      cuisine: rData.cuisine,
+      location: rData.location,
+      settings: rData.settings,
+    });
+
+    const tables = [
+      { restaurantId: restaurant._id, number: 'T1', capacity: 2, status: 'available' },
+      { restaurantId: restaurant._id, number: 'T2', capacity: 2, status: 'available' },
+      { restaurantId: restaurant._id, number: 'T3', capacity: 4, status: 'available' },
+      { restaurantId: restaurant._id, number: 'T4', capacity: 4, status: 'available' },
+      { restaurantId: restaurant._id, number: 'T5', capacity: 4, status: 'available' },
+      { restaurantId: restaurant._id, number: 'T6', capacity: 6, status: 'available' },
+      { restaurantId: restaurant._id, number: 'T7', capacity: 6, status: 'available' },
+      { restaurantId: restaurant._id, number: 'T8', capacity: 8, status: 'available' },
+    ];
+    await Table.insertMany(tables);
+
+    for (let i = 0; i < rData.menu.length; i++) {
+      const catData = rData.menu[i];
+      const category = await MenuCategory.create({
+        restaurantId: restaurant._id,
+        name: catData.cat,
+        sortOrder: i + 1,
+      });
+
+      const menuItems = catData.items.map(item => ({
+        restaurantId: restaurant._id,
+        categoryId: category._id,
+        name: item.name,
+        description: item.desc,
+        price: item.price,
+        isAvailable: true,
+        prepTimeMinutes: item.prep,
+        gstRate: 5,
+        isVeg: true,
+        isVegan: false,
+      }));
+      await MenuItem.insertMany(menuItems);
+    }
+
+    await User.create({
       restaurantId: restaurant._id,
-      email: 'owner@spicegarden.com',
+      email: `owner@${rData.slug}.com`,
       password: defaultPasswordHash,
-      name: 'Rajesh Kumar (Owner)',
+      name: `${rData.name} Owner`,
       role: 'owner',
-    },
-    {
-      restaurantId: restaurant._id,
-      email: 'staff@spicegarden.com',
-      password: defaultPasswordHash,
-      name: 'Priya Sharma (Staff)',
-      role: 'staff',
-    },
-    {
-      restaurantId: restaurant._id,
-      email: 'kitchen@spicegarden.com',
-      password: defaultPasswordHash,
-      name: 'Chef Anand (Kitchen)',
-      role: 'kitchen',
-    },
-  ]);
-
-  console.log('[Database-Reset] ✅ Database successfully reset with Spice Garden Fine Dining & structured menu!');
-  return true;
-}
-
-export async function seedDemoSimulation(restaurantId?: string) {
-  let restaurant = null;
-  if (restaurantId) {
-    restaurant = await Restaurant.findById(restaurantId);
-  }
-  if (!restaurant) {
-    restaurant = await Restaurant.findOne({ slug: 'spice-garden' });
-  }
-  if (!restaurant) {
-    restaurant = await Restaurant.findOne();
-  }
-  if (!restaurant) {
-    await runSeed(true);
-    restaurant = await Restaurant.findOne();
-  }
-  if (!restaurant) throw new Error('No restaurant found for demo simulation');
-
-  const rId = restaurant._id;
-
-  // 1. Wipe existing queue entries and orders for this restaurant
-  await Promise.all([
-    QueueEntry.deleteMany({ restaurantId: rId }),
-    Order.deleteMany({ restaurantId: rId }),
-  ]);
-
-  // 2. Fetch menu items for realistic pre-orders
-  const items = await MenuItem.find({ restaurantId: rId }).limit(6);
-
-  // 3. Create 5 realistic queue entries
-  const entriesData = [
-    { name: 'Rahul Sharma', phone: '9876543210', partySize: 4, position: 1, status: 'waiting', wait: 12 },
-    { name: 'Ananya Verma', phone: '9876543211', partySize: 2, position: 2, status: 'waiting', wait: 20 },
-    { name: 'Vikram Malhotra', phone: '9876543212', partySize: 5, position: 3, status: 'notified', wait: 5 },
-    { name: 'Priya Nair', phone: '9876543213', partySize: 3, position: 4, status: 'on_my_way', wait: 2 },
-    { name: 'Amitabh Kapoor', phone: '9876543214', partySize: 6, position: 5, status: 'waiting', wait: 35 },
-  ];
-
-  const createdEntries = [];
-  for (const d of entriesData) {
-    const entry = await QueueEntry.create({
-      restaurantId: rId,
-      customer: { name: d.name, phone: d.phone },
-      partySize: d.partySize,
-      position: d.position,
-      status: d.status,
-      estimatedWaitMinutes: d.wait,
-      joinedAt: new Date(Date.now() - (6 - d.position) * 8 * 60 * 1000),
-      notifiedAt: d.status !== 'waiting' ? new Date(Date.now() - 4 * 60 * 1000) : undefined,
-      onMyWayAt: d.status === 'on_my_way' ? new Date(Date.now() - 2 * 60 * 1000) : undefined,
     });
-    createdEntries.push(entry);
-  }
-
-  // 4. Update table statuses realistically
-  const tables = await Table.find({ restaurantId: rId });
-  if (tables.length >= 4) {
-    await Table.findByIdAndUpdate(tables[0]._id, { status: 'occupied' });
-    await Table.findByIdAndUpdate(tables[1]._id, { status: 'cleaning' });
-    await Table.findByIdAndUpdate(tables[2]._id, { status: 'ready', currentQueueEntryId: createdEntries[2]._id });
-    await Table.findByIdAndUpdate(tables[3]._id, { status: 'available' });
     
-    await QueueEntry.findByIdAndUpdate(createdEntries[2]._id, { assignedTableId: tables[2]._id });
+    await User.create({
+      restaurantId: restaurant._id,
+      email: `staff@${rData.slug}.com`,
+      password: defaultPasswordHash,
+      name: 'Head Waiter',
+      role: 'staff',
+    });
   }
 
-  // 5. Create 2 realistic pre-orders
-  if (items.length >= 2 && createdEntries.length >= 2) {
-    const o1 = await Order.create({
-      restaurantId: rId,
-      queueEntryId: createdEntries[0]._id,
-      items: [
-        { menuItemId: items[0]._id, name: items[0].name, qty: 2, price: items[0].price },
-        { menuItemId: items[1]._id, name: items[1].name, qty: 1, price: items[1].price },
-      ],
-      subtotal: items[0].price * 2 + items[1].price,
-      gst: Math.round((items[0].price * 2 + items[1].price) * 0.05),
-      total: Math.round((items[0].price * 2 + items[1].price) * 1.05),
-      status: 'confirmed',
-      triggers: { tableReady: true, customerOnMyWay: false },
-    });
-    await QueueEntry.findByIdAndUpdate(createdEntries[0]._id, { preOrderId: o1._id });
-
-    const o2 = await Order.create({
-      restaurantId: rId,
-      queueEntryId: createdEntries[3]._id,
-      items: [
-        { menuItemId: items[1]._id, name: items[1].name, qty: 2, price: items[1].price },
-      ],
-      subtotal: items[1].price * 2,
-      gst: Math.round(items[1].price * 2 * 0.05),
-      total: Math.round(items[1].price * 2 * 1.05),
-      status: 'cooking',
-      cookingStartedAt: new Date(Date.now() - 5 * 60 * 1000),
-      triggers: { tableReady: true, customerOnMyWay: true, dualTriggerMetAt: new Date(Date.now() - 5 * 60 * 1000) },
-    });
-    await QueueEntry.findByIdAndUpdate(createdEntries[3]._id, { preOrderId: o2._id });
-  }
-
-  return { message: 'Demo simulation dataset loaded successfully!', restaurantId: rId.toString() };
+  console.log('[Database-Reset] ✅ Database successfully seeded with 10 Ahmedabad restaurants!');
 }
