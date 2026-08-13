@@ -86,4 +86,23 @@ router.all('/seed-demo-simulation', async (req, res) => {
   }
 });
 
+// Temporary endpoint to reset the live superadmin password
+router.get('/temp-reset-password', async (req, res) => {
+  try {
+    const newPasswordHash = await bcrypt.hash('IQ_SmartWaitList$2026@', 10);
+    const updatedUser = await User.findOneAndUpdate(
+      { email: 'admin@smartwaitlist.com' },
+      { password: newPasswordHash },
+      { new: true }
+    );
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'Superadmin user not found in this database!' });
+    }
+    res.json({ message: '✅ Live SuperAdmin password has been updated to the new password successfully!' });
+  } catch (err) {
+    console.error('Password reset error:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 export default router;
