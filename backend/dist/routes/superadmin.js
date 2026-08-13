@@ -8,6 +8,7 @@ import { Table } from '../models/Table.js';
 import { QueueEntry } from '../models/QueueEntry.js';
 import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { Order } from '../models/Order.js';
+import { AuditLog } from '../models/AuditLog.js';
 const router = Router();
 // Protect all superadmin routes
 router.use(authMiddleware, requireRole('superadmin'));
@@ -254,6 +255,17 @@ router.post('/reset-database', async (req, res) => {
     catch (err) {
         console.error('Database reset error:', err);
         res.status(500).json({ error: 'Failed to reset database' });
+    }
+});
+// GET /api/superadmin/audit-logs - Fetch all system movements/logs
+router.get('/audit-logs', async (req, res) => {
+    try {
+        const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(1000);
+        res.json(logs);
+    }
+    catch (err) {
+        console.error('Superadmin get audit logs error:', err);
+        res.status(500).json({ error: 'Failed to fetch audit logs' });
     }
 });
 export default router;

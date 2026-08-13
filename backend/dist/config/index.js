@@ -11,4 +11,6 @@ export const config = {
     whatsappVerifyToken: process.env.WHATSAPP_VERIFY_TOKEN || 'serva_smart_waitlist_verify_token',
     whatsappBusinessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '',
     whatsappApiVersion: process.env.WHATSAPP_API_VERSION || 'v19.0',
+    superAdminEmail: process.env.SUPERADMIN_EMAIL || 'admin@smartwaitlist.com',
+    superAdminPassword: process.env.SUPERADMIN_PASSWORD || 'IQ_SmartWaitList$2026@',
 };

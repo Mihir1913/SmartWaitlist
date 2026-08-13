@@ -8,6 +8,7 @@ import { config } from './config/index.js';
 import { connectDB } from './config/db.js';
 import { setIO } from './services/socket.js';
 import { runSeed } from './services/seedService.js';
+import { auditLogger } from './middleware/auditLogger.js';
 import authRoutes from './routes/auth.js';
 import restaurantRoutes from './routes/restaurants.js';
 import queueRoutes from './routes/queue.js';
@@ -41,6 +42,8 @@ const limiter = rateLimit({
     },
 });
 app.use('/api/', limiter);
+// Mount the audit logger for all /api routes to track movements
+app.use('/api', auditLogger);
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/restaurants', restaurantRoutes);

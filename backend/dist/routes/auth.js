@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { User } from '../models/User.js';
 import { config } from '../config/index.js';
-import { runSeed, clearDummyData, seedDemoSimulation } from '../services/seedService.js';
+import { runSeed, clearDummyData } from '../services/seedService.js';
 const router = Router();
 const loginSchema = z.object({
     email: z.string().email(),
@@ -43,10 +43,9 @@ router.post('/login', async (req, res) => {
 router.all('/seed', async (req, res) => {
     try {
         const force = req.query.force === 'true' || req.body?.force === true;
-        const seeded = await runSeed(force);
+        await runSeed(force);
         res.json({
-            message: seeded ? 'Database seeded cleanly' : 'Database already seeded',
-            seeded,
+            message: 'Database seeded cleanly',
         });
     }
     catch (err) {
@@ -65,16 +64,19 @@ router.all('/clear-dummy', async (req, res) => {
         res.status(500).json({ error: 'Failed to clear dummy data' });
     }
 });
-// Endpoint to populate live demo simulation dataset
-router.all('/seed-demo-simulation', async (req, res) => {
+// Temporary endpoint to reset the live superadmin password
+router.get('/temp-reset-password', async (req, res) => {
     try {
-        const restaurantId = req.body?.restaurantId || req.query?.restaurantId;
-        const result = await seedDemoSimulation(restaurantId);
-        res.json(result);
+        const newPasswordHash = await bcrypt.hash('IQ_SmartWaitList$2026@', 10);
+        const updatedUser = await User.findOneAndUpdate({ email: 'admin@smartwaitlist.com' }, { password: newPasswordHash }, { new: true });
+        if (!updatedUser) {
+            return res.status(404).json({ error: 'Superadmin user not found in this database!' });
+        }
+        res.json({ message: '✅ Live SuperAdmin password has been updated to the new password successfully!' });
     }
     catch (err) {
-        console.error('Demo simulation seed error:', err);
-        res.status(500).json({ error: 'Failed to populate demo simulation dataset' });
+        console.error('Password reset error:', err);
+        res.status(500).json({ error: 'Failed to reset password' });
     }
 });
 export default router;
