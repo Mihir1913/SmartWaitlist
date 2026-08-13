@@ -96,6 +96,7 @@ router.get('/public/list', async (req, res) => {
                 description: r.description || '',
                 openingHours: r.openingHours || '11:00 AM - 11:00 PM',
                 cuisine: r.cuisine || 'Multi-Cuisine & Fine Dining',
+                location: r.location,
                 activeQueueCount,
                 tableCount,
             };

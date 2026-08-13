@@ -35,10 +35,25 @@ import {
   Heart,
   Shield,
   X,
+  Navigation,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import QRCodeModal from '../components/QRCodeModal';
 import InquiryModal from '../components/InquiryModal';
+
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface PublicRestaurant {
   id: string;
@@ -49,8 +64,10 @@ interface PublicRestaurant {
   description?: string;
   openingHours?: string;
   cuisine?: string;
+  location?: { lat: number; lng: number };
   activeQueueCount: number;
   tableCount: number;
+  distanceKm?: number;
 }
 
 export default function HomePage() {
@@ -65,6 +82,46 @@ export default function HomePage() {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [annualBilling, setAnnualBilling] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const requestLocation = () => {
+    setIsLocating(true);
+    setLocationError(null);
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.');
+      setIsLocating(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setIsLocating(false);
+      },
+      (error) => {
+        setLocationError('Unable to retrieve your location. Please check browser permissions.');
+        setIsLocating(false);
+      }
+    );
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   useEffect(() => {
     api
@@ -83,6 +140,31 @@ export default function HomePage() {
       r.cuisine?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  let processedRestaurants = [...filteredRestaurants];
+  if (userLocation) {
+    processedRestaurants = processedRestaurants
+      .map((r) => {
+        if (r.location && r.location.lat && r.location.lng) {
+          return {
+            ...r,
+            distanceKm: calculateDistance(
+              userLocation.lat,
+              userLocation.lng,
+              r.location.lat,
+              r.location.lng
+            ),
+          };
+        }
+        return r;
+      })
+      .sort((a, b) => {
+        if (a.distanceKm !== undefined && b.distanceKm !== undefined) return a.distanceKm - b.distanceKm;
+        if (a.distanceKm !== undefined) return -1;
+        if (b.distanceKm !== undefined) return 1;
+        return 0;
+      });
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 text-surface-900 font-sans selection:bg-brand-500 selection:text-white flex flex-col justify-between">
@@ -515,10 +597,50 @@ export default function HomePage() {
 
           {/* ────────────────────────── RESTAURANTS DIRECTORY ────────────────────────── */}
           <section id="restaurants-section" className="space-y-6 pt-6">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-stone-200 pb-4">
+            {/* Nearby Map Section */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-display font-bold text-lg text-surface-900 flex items-center gap-2">
+                    <Navigation className="w-5 h-5 text-brand-600" />
+                    Nearby Restaurants Map
+                  </h3>
+                  <p className="text-xs text-stone-500">Allow location access to discover restaurants near you.</p>
+                </div>
+                {!userLocation && (
+                  <button onClick={requestLocation} disabled={isLocating} className="btn-primary text-xs px-5 py-2.5 shadow-md">
+                    {isLocating ? 'Locating...' : 'Find Near Me'}
+                  </button>
+                )}
+              </div>
+              {locationError && <div className="text-xs text-red-500 font-medium">{locationError}</div>}
+              {userLocation && (
+                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-stone-200 relative z-0 shadow-inner">
+                  <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={12} style={{ height: '100%', width: '100%' }}>
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" attribution="&copy; OpenStreetMap contributors" />
+                    <Marker position={[userLocation.lat, userLocation.lng]}>
+                      <Popup>You are here</Popup>
+                    </Marker>
+                    {processedRestaurants.map((r) => r.location ? (
+                      <Marker key={r.id} position={[r.location.lat, r.location.lng]}>
+                        <Popup className="rounded-xl min-w-[150px]">
+                          <div className="font-bold text-sm">{r.name}</div>
+                          <div className="text-[11px] text-stone-500 mb-1">{r.activeQueueCount === 0 ? 'No wait time' : `${r.activeQueueCount} waiting`}</div>
+                          <Link to={`/join/${r.slug}`} className="text-brand-600 text-xs font-bold block bg-brand-50 rounded-lg px-2 py-1.5 text-center border border-brand-100 hover:bg-brand-100 transition mt-2">
+                            Join Waitlist
+                          </Link>
+                        </Popup>
+                      </Marker>
+                    ) : null)}
+                  </MapContainer>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-stone-200 pb-4 pt-4">
               <div>
                 <h2 className="text-2xl font-bold font-display text-surface-900">
-                  Partner Restaurants ({filteredRestaurants.length})
+                  Partner Restaurants ({processedRestaurants.length})
                 </h2>
                 <p className="text-xs text-stone-500">Scan QR Code or tap to join waitlist & pre-order dishes</p>
               </div>
@@ -541,13 +663,13 @@ export default function HomePage() {
                   <div key={n} className="card p-6 h-48 animate-pulse bg-stone-100" />
                 ))}
               </div>
-            ) : filteredRestaurants.length === 0 ? (
+            ) : processedRestaurants.length === 0 ? (
               <div className="card p-12 text-center text-stone-500">
                 No restaurants found matching your search.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredRestaurants.map((r) => (
+                {processedRestaurants.map((r) => (
                   <div
                     key={r.id}
                     className="bg-white rounded-3xl border border-stone-200/90 shadow-sm hover:shadow-xl transition-all p-6 flex flex-col justify-between space-y-4 group"
@@ -577,9 +699,16 @@ export default function HomePage() {
                       </p>
 
                       <div className="space-y-1.5 text-xs text-stone-500 pt-1">
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                          <span className="truncate">{r.address}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                            <span className="truncate">{r.address}</span>
+                          </div>
+                          {r.distanceKm !== undefined && (
+                            <span className="font-bold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-100 shrink-0 text-[10px]">
+                              {r.distanceKm.toFixed(1)} km
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />

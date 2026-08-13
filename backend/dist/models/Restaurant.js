@@ -8,6 +8,10 @@ const restaurantSchema = new Schema({
     description: { type: String, default: '' },
     openingHours: { type: String, default: '11:00 AM - 11:00 PM' },
     cuisine: { type: String, default: 'Multi-Cuisine & Dining' },
+    location: {
+        lat: { type: Number },
+        lng: { type: Number },
+    },
     settings: {
         avgTurnoverMinutes: { type: Number, default: 45 },
         maxQueueSize: { type: Number, default: 50 },

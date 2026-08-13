@@ -43,12 +43,38 @@ export async function runSeed(force = true) {
     description: 'Authentic Indian Cuisine, Mughlai Delicacies & Fine Dining Experience',
     openingHours: '11:00 AM - 11:00 PM',
     cuisine: 'North Indian & Mughlai',
+    location: { lat: 12.9784, lng: 77.6408 },
     settings: {
       avgTurnoverMinutes: 45,
       maxQueueSize: 50,
       preOrderEnabled: true,
     },
   });
+
+  await Restaurant.insertMany([
+    {
+      name: 'Truffles Burger Joint',
+      slug: 'truffles-koramangala',
+      address: 'Koramangala 5th Block, Bangalore',
+      whatsappPhone: '919876543211',
+      description: 'Legendary burgers, steaks and shakes.',
+      openingHours: '11:00 AM - 11:00 PM',
+      cuisine: 'American & Fast Food',
+      location: { lat: 12.9352, lng: 77.6245 },
+      settings: { avgTurnoverMinutes: 30, maxQueueSize: 50, preOrderEnabled: false },
+    },
+    {
+      name: 'Toit Brewpub',
+      slug: 'toit-indiranagar',
+      address: '100 Feet Road, Indiranagar, Bangalore',
+      whatsappPhone: '919876543212',
+      description: 'Craft beers and wood-fired pizzas.',
+      openingHours: '12:00 PM - 01:00 AM',
+      cuisine: 'Continental & Pub Food',
+      location: { lat: 12.9798, lng: 77.6406 },
+      settings: { avgTurnoverMinutes: 90, maxQueueSize: 100, preOrderEnabled: true },
+    }
+  ]);
 
   // 4. Create 8 clean tables all in 'available' status
   const tables = [

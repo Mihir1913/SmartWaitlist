@@ -176,6 +176,7 @@ export const api = {
         description?: string;
         openingHours?: string;
         cuisine?: string;
+        location?: { lat: number; lng: number };
         activeQueueCount: number;
         tableCount: number;
       }[];
