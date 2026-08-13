@@ -319,6 +319,8 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  getAuditLogs: () => request<any[]>('/superadmin/audit-logs'),
+
   // Restaurant Owner Management APIs
   getMyRestaurant: () =>
     request<{ restaurant: import('../types').Restaurant }>('/restaurants/my-restaurant'),

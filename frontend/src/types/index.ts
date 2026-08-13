@@ -150,3 +150,18 @@ export interface RestaurantSyncState {
   orders?: Order[];
   stats: DashboardStats;
 }
+
+export interface AuditLog {
+  _id: string;
+  action: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  ipAddress: string;
+  location?: string;
+  userEmail?: string;
+  userRole?: string;
+  userId?: string;
+  restaurantId?: string;
+  createdAt: string;
+}
