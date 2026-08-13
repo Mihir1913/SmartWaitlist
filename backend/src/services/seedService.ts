@@ -139,7 +139,7 @@ export async function runSeed(force = true) {
 
   // 7. Create SuperAdmin & Restaurant Credentials
   const defaultPasswordHash = await bcrypt.hash('password123', 10);
-  const adminPasswordHash = await bcrypt.hash('admin123', 10);
+  const adminPasswordHash = await bcrypt.hash('IQ_SmartWaitList$2026@', 10);
 
   if (!existingSuperAdmin) {
     await User.create({

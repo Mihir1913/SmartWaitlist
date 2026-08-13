@@ -34,12 +34,6 @@ export default function LoginPage() {
     }
   };
 
-  const demoAccounts = [
-    { email: 'admin@smartwaitlist.com', role: 'Main Admin → Platform Dashboard' },
-    { email: 'owner@spicegarden.com', role: 'Owner → Admin Dashboard' },
-    { email: 'staff@spicegarden.com', role: 'Staff → Table Panel' },
-    { email: 'kitchen@spicegarden.com', role: 'Kitchen → Order Display' },
-  ];
 
   return (
     <div className="min-h-screen flex">
@@ -129,25 +123,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 card p-4">
-            <p className="text-sm font-medium text-stone-600 mb-3">Demo accounts (password: password123)</p>
-            <div className="space-y-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.email}
-                  type="button"
-                  onClick={() => {
-                    setEmail(acc.email);
-                    setPassword('password123');
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-50 transition text-sm"
-                >
-                  <span className="font-medium">{acc.email}</span>
-                  <span className="text-stone-400 ml-2">— {acc.role}</span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           <Link to="/" className="block text-center text-sm text-stone-500 mt-6 hover:text-brand-600">
             ← Back to home
