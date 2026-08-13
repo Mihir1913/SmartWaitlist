@@ -5,6 +5,7 @@ import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { User } from '../models/User.js';
 import { QueueEntry } from '../models/QueueEntry.js';
 import { Order } from '../models/Order.js';
+import { config } from '../config/index.js';
 
 export async function clearDummyData() {
   console.log('[Clear-Data] Wiping queue entries, orders, and resetting all tables to available...');
@@ -139,11 +140,11 @@ export async function runSeed(force = true) {
 
   // 7. Create SuperAdmin & Restaurant Credentials
   const defaultPasswordHash = await bcrypt.hash('password123', 10);
-  const adminPasswordHash = await bcrypt.hash('IQ_SmartWaitList$2026@', 10);
+  const adminPasswordHash = await bcrypt.hash(config.superAdminPassword, 10);
 
   if (!existingSuperAdmin) {
     await User.create({
-      email: 'admin@smartwaitlist.com',
+      email: config.superAdminEmail,
       password: adminPasswordHash,
       name: 'Main Platform Admin',
       role: 'superadmin',
