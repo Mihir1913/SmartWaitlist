@@ -85,13 +85,20 @@ export async function recalculateQueuePositions(restaurantId) {
         restaurantId,
         status: { $in: ACTIVE_QUEUE_STATUSES },
     }).sort({ joinedAt: 1 });
-    const baseETA = await calculateETA(restaurantId);
     const restaurant = await Restaurant.findById(restaurantId);
+    const totalTablesCount = await Table.countDocuments({ restaurantId });
+    const totalTables = Math.max(1, totalTablesCount);
     const avgTurnover = restaurant?.settings.avgTurnoverMinutes ?? 45;
+    const timePerPosition = Math.max(3, Math.ceil(avgTurnover / totalTables));
     for (let i = 0; i < entries.length; i++) {
         const entry = entries[i];
         entry.position = i + 1;
-        entry.estimatedWaitMinutes = Math.max(5, baseETA + i * Math.ceil(avgTurnover / 2));
+        if (entry.assignedTableId || entry.status === 'notified' || entry.status === 'on_my_way') {
+            entry.estimatedWaitMinutes = 5;
+        }
+        else {
+            entry.estimatedWaitMinutes = Math.max(5, Math.min(60, i * timePerPosition + 5));
+        }
         await entry.save();
     }
     emitToRestaurant(restaurantId, 'queue:updated', { entries });
