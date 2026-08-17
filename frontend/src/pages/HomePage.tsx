@@ -23,7 +23,6 @@ import {
   ShieldCheck,
   Check,
   Crown,
-  Star,
   Quote,
   Twitter,
   Instagram,
@@ -31,15 +30,17 @@ import {
   Facebook,
   Mail,
   PhoneCall,
-  Globe,
   Heart,
-  Shield,
   X,
   Navigation,
+  Compass,
+  Layers,
+  Box,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import QRCodeModal from '../components/QRCodeModal';
 import InquiryModal from '../components/InquiryModal';
+import Restaurant3DCanvas from '../components/Restaurant3DCanvas';
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -102,7 +103,7 @@ export default function HomePage() {
         });
         setIsLocating(false);
       },
-      (error) => {
+      () => {
         setLocationError('Unable to retrieve your location. Please check browser permissions.');
         setIsLocating(false);
       }
@@ -167,21 +168,24 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 text-surface-900 font-sans selection:bg-brand-500 selection:text-white flex flex-col justify-between">
+    <div className="min-h-screen bg-stone-950 text-stone-100 font-sans selection:bg-amber-500 selection:text-stone-950 flex flex-col justify-between overflow-x-hidden">
       <div>
-        {/* ────────────────────────── NAVBAR ────────────────────────── */}
-        <header className="bg-white/85 backdrop-blur-md sticky top-0 z-40 border-b border-stone-200/80 shadow-sm">
+        {/* ────────────────────────── 3D GLASS NAVBAR ────────────────────────── */}
+        <header className="bg-stone-950/80 backdrop-blur-2xl sticky top-0 z-50 border-b border-amber-500/20 shadow-2xl shadow-black/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-600 to-amber-600 flex items-center justify-center text-white shadow-md shadow-brand-600/20">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 flex items-center justify-center text-stone-950 font-black shadow-lg shadow-amber-500/25 border border-amber-300/40 transform hover:scale-105 transition duration-300">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <span className="font-display font-black text-xl text-surface-900 tracking-tight">
+                <span className="font-display font-black text-xl text-white tracking-tight flex items-center gap-1.5">
                   Smart Waitlist
+                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-700/60">
+                    3D OS
+                  </span>
                 </span>
-                <span className="hidden sm:inline-block ml-2 text-[11px] font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-200">
-                  Live Queue OS
+                <span className="hidden sm:inline-block text-[11px] font-bold uppercase tracking-wider text-amber-400/90">
+                  Immersive Dining & Live Queue Platform
                 </span>
               </div>
             </div>
@@ -189,7 +193,7 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowInquiryModal(true)}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-extrabold text-xs flex items-center gap-1.5 shadow transition transform active:scale-95"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-orange-500/20 transition transform active:scale-95 border border-amber-300/40"
               >
                 <Building2 className="w-4 h-4" />
                 <span>Inquire Now</span>
@@ -197,84 +201,108 @@ export default function HomePage() {
 
               <Link
                 to="/status"
-                className="hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition"
+                className="hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-stone-200 text-xs font-semibold transition border border-white/10"
               >
-                <Search className="w-3.5 h-3.5 text-brand-600" />
+                <Search className="w-3.5 h-3.5 text-amber-400" />
                 <span>Track Order</span>
               </Link>
 
-              <Link to="/login" className="btn-secondary text-xs sm:text-sm py-2 px-4">
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-200 text-xs font-bold transition border border-stone-800"
+              >
                 Staff Portal
               </Link>
             </div>
           </div>
         </header>
 
-        {/* ────────────────────────── HERO SECTION ────────────────────────── */}
+        {/* ────────────────────────── 3D HERO SHOWCASE SECTION ────────────────────────── */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 space-y-20">
-          <section className="pt-12 pb-8 text-center space-y-6">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-100 via-amber-100 to-brand-100 text-brand-900 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-brand-200 shadow-sm animate-pulse">
-              <MessageCircle className="w-4 h-4 text-brand-600" />
-              WhatsApp-Native Queue & Pre-Ordering System
+          <section className="pt-10 pb-6 space-y-10 relative">
+            {/* Ambient Background Lights */}
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-r from-amber-500/15 via-orange-500/20 to-amber-600/15 rounded-full blur-[120px] pointer-events-none" />
+
+            <div className="text-center space-y-6 relative z-10">
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 text-amber-300 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-amber-500/30 shadow-lg animate-pulse">
+                <Box className="w-4 h-4 text-amber-400" />
+                3D Interactive Waitlist & Restaurant OS
+              </div>
+
+              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.08] max-w-5xl mx-auto tracking-tight">
+                Step Into Next-Gen <br />
+                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200 bg-clip-text text-transparent drop-shadow-sm">
+                  3D Immersive Dining
+                </span>
+              </h1>
+
+              <p className="text-stone-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-light">
+                Eliminate waitlist walkaways with real-time WebGL table maps, instant WhatsApp guest alerts, pre-seating dish pre-orders, and live drag & drop kitchen KDS.
+              </p>
+
+              {/* Quick Action CTAs */}
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+                <a
+                  href="#restaurants-section"
+                  className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-600 hover:to-orange-600 text-stone-950 font-black text-base flex items-center gap-2 shadow-xl shadow-amber-500/25 transition transform active:scale-95 border border-amber-300/40"
+                >
+                  <Utensils className="w-5 h-5" />
+                  <span>Explore Restaurants ({restaurants.length})</span>
+                </a>
+
+                <button
+                  onClick={() => setShowInquiryModal(true)}
+                  className="px-7 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800 text-white font-extrabold text-base flex items-center gap-2 shadow-xl transition transform active:scale-95 border border-stone-700/80 backdrop-blur-xl"
+                >
+                  <Building2 className="w-5 h-5 text-amber-400" />
+                  <span>Partner Your Restaurant</span>
+                </button>
+              </div>
             </div>
 
-            <h1 className="font-display text-4xl sm:text-6xl font-extrabold text-surface-900 leading-[1.1] max-w-4xl mx-auto tracking-tight">
-              Turn Waiting Guests Into <br />
-              <span className="bg-gradient-to-r from-brand-600 via-amber-600 to-brand-600 bg-clip-text text-transparent">
-                High-Turnover Revenue
-              </span>
-            </h1>
-
-            <p className="text-stone-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              Eliminate restaurant walkaways with instant WhatsApp notifications, pre-seating dish pre-orders, smart auto-tables, and a live drag-and-drop Kitchen KDS.
-            </p>
-
-            {/* Quick Action Buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <a href="#restaurants-section" className="btn-primary text-base px-6 py-3.5 shadow-xl shadow-brand-500/25">
-                <Utensils className="w-4 h-4" />
-                Explore Restaurants ({restaurants.length})
-              </a>
-
-              <button
-                onClick={() => setShowInquiryModal(true)}
-                className="px-6 py-3.5 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white font-extrabold text-base flex items-center gap-2 shadow-xl transition transform active:scale-95 border border-stone-800"
-              >
-                <Building2 className="w-4 h-4 text-amber-400" />
-                <span>Partner Your Restaurant (Inquire)</span>
-              </button>
+            {/* ────────────────────────── 3D CANVAS COMPONENT ────────────────────────── */}
+            <div className="relative z-10 pt-4">
+              <Restaurant3DCanvas
+                activeQueueCount={stats.totalQueues > 0 ? stats.totalQueues : 8}
+                onSelectTable={(table) => {
+                  console.log('Selected 3D Table:', table);
+                }}
+              />
             </div>
           </section>
 
-          {/* ────────────────────────── METRICS COUNTER ────────────────────────── */}
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* ────────────────────────── 3D GLASS METRICS COUNTER ────────────────────────── */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
             {[
-              { label: 'Active Restaurants', value: stats.totalRestaurants ?? restaurants.length, icon: Building2, color: 'text-amber-500' },
-              { label: 'Guests Waiting Now', value: stats.totalQueues ?? 0, icon: Users, color: 'text-orange-500' },
-              { label: 'Tables Seated Today', value: stats.totalSeated ?? 0, icon: Armchair, color: 'text-emerald-500' },
-              { label: 'Avg Wait Saved', value: '14 Mins', icon: Clock, color: 'text-blue-500' },
+              { label: 'Active Restaurants', value: stats.totalRestaurants ?? restaurants.length, icon: Building2, color: 'text-amber-400', glow: 'from-amber-500/10' },
+              { label: 'Guests Waiting Live', value: stats.totalQueues ?? 0, icon: Users, color: 'text-orange-400', glow: 'from-orange-500/10' },
+              { label: 'Tables Seated Today', value: stats.totalSeated ?? 0, icon: Armchair, color: 'text-emerald-400', glow: 'from-emerald-500/10' },
+              { label: 'Avg Wait Saved', value: '14 Mins', icon: Clock, color: 'text-sky-400', glow: 'from-sky-500/10' },
             ].map((m) => (
-              <div key={m.label} className="bg-white border border-stone-200/90 p-5 rounded-3xl shadow-sm text-center space-y-1 hover:border-brand-300 transition">
-                <div className={`w-11 h-11 rounded-2xl bg-stone-100 flex items-center justify-center mx-auto mb-2 ${m.color}`}>
-                  <m.icon className="w-5 h-5" />
+              <div
+                key={m.label}
+                className={`bg-gradient-to-b ${m.glow} to-stone-900/90 backdrop-blur-xl border border-white/10 hover:border-amber-500/40 p-6 rounded-3xl shadow-xl text-center space-y-2 transition duration-300 transform hover:-translate-y-1`}
+              >
+                <div className={`w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-2 ${m.color}`}>
+                  <m.icon className="w-6 h-6" />
                 </div>
-                <div className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900">{m.value}</div>
-                <div className="text-xs text-stone-500 font-medium">{m.label}</div>
+                <div className="font-display text-3xl sm:text-4xl font-black text-white">{m.value}</div>
+                <div className="text-xs text-stone-400 font-medium">{m.label}</div>
               </div>
             ))}
           </section>
 
-          {/* ────────────────────────── WHY CHOOSE US SECTION ────────────────────────── */}
-          <section className="space-y-8 pt-4">
-            <div className="text-center max-w-2xl mx-auto space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-3 py-1 rounded-full border border-brand-200">
-                Why Choose Smart Waitlist
+          {/* ────────────────────────── 3D GLASS FEATURES SHOWCASE ────────────────────────── */}
+          <section className="space-y-10 pt-4">
+            <div className="text-center max-w-2xl mx-auto space-y-3">
+              <span className="text-xs font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 px-3.5 py-1 rounded-full border border-amber-700/60 inline-flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-amber-400" /> Technological Superiority
               </span>
-              <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-stone-900">
-                Built for High-Volume Restaurants & Delightful Guests
+              <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight">
+                Built for High-Turnover Restaurants & Guests
               </h2>
-              <p className="text-stone-600 text-sm">
-                Six core technological advantages that eliminate walkaways and increase table turnover by up to 25%.
+              <p className="text-stone-400 text-sm leading-relaxed">
+                Six core 3D-integrated technological features that eliminate walkaways and boost table turnover by up to 25%.
               </p>
             </div>
 
@@ -283,66 +311,66 @@ export default function HomePage() {
                 {
                   icon: MessageCircle,
                   title: 'WhatsApp-Native Queueing',
-                  desc: 'Guests receive real-time table updates on WhatsApp with zero app download required.',
-                  color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+                  desc: 'Guests receive instant table alerts on WhatsApp with live wait timers & zero app download.',
+                  color: 'from-emerald-500/20 to-stone-900 text-emerald-400 border-emerald-500/30',
                 },
                 {
                   icon: Utensils,
                   title: 'Pre-Seating Dish Orders',
-                  desc: 'Guests browse menus and pre-order dishes while waiting. Kitchen starts prep before seating.',
-                  color: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+                  desc: 'Guests browse digital menus and pre-order dishes while waiting. Kitchen starts cooking before seating.',
+                  color: 'from-orange-500/20 to-stone-900 text-orange-400 border-orange-500/30',
                 },
                 {
                   icon: ChefHat,
                   title: 'Live Drag & Drop KDS',
-                  desc: 'Real-time kitchen order board syncs instantly across staff tablets and customer status screens.',
-                  color: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+                  desc: 'Real-time kitchen order board syncs instantly across staff tablets and guest status screens.',
+                  color: 'from-amber-500/20 to-stone-900 text-amber-400 border-amber-500/30',
                 },
                 {
                   icon: CreditCard,
                   title: 'Online UPI & Card Deposits',
-                  desc: 'Integrated Razorpay and UPI Intent payments to hold queue positions and reduce no-shows.',
-                  color: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+                  desc: 'Integrated Razorpay & UPI Intent payments to hold queue positions and reduce no-shows.',
+                  color: 'from-sky-500/20 to-stone-900 text-sky-400 border-sky-500/30',
                 },
                 {
                   icon: BarChart3,
                   title: 'Real-Time ROI Analytics',
-                  desc: 'Track turnover rate, walkaway reduction, revenue gained, and top-selling dishes by date range.',
-                  color: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+                  desc: 'Track turnover rate, walkaway reduction, revenue gained, and top dishes by date range.',
+                  color: 'from-purple-500/20 to-stone-900 text-purple-400 border-purple-500/30',
                 },
                 {
                   icon: Printer,
                   title: 'Printable Acrylic QR Standees',
                   desc: 'Generate high-res printable QR standees (Desk Frame, Table Card, Poster) in 1 tap.',
-                  color: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
+                  color: 'from-rose-500/20 to-stone-900 text-rose-400 border-rose-500/30',
                 },
               ].map((f) => (
                 <div
                   key={f.title}
-                  className="bg-white rounded-3xl border border-stone-200/90 p-6 space-y-3 shadow-sm hover:shadow-xl transition-all duration-300 group hover:-translate-y-1"
+                  className={`bg-gradient-to-b ${f.color} rounded-3xl border p-7 space-y-4 shadow-xl hover:shadow-2xl transition duration-300 hover:-translate-y-1.5 group`}
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${f.color}`}>
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
                     <f.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="font-display font-bold text-lg text-stone-900 group-hover:text-brand-600 transition">
+                  <h3 className="font-display font-bold text-xl text-white group-hover:text-amber-300 transition">
                     {f.title}
                   </h3>
-                  <p className="text-xs text-stone-600 leading-relaxed">{f.desc}</p>
+                  <p className="text-xs text-stone-300 leading-relaxed font-light">{f.desc}</p>
                 </div>
               ))}
             </div>
           </section>
 
           {/* ────────────────────────── HOSPITALITY QUOTES & TESTIMONIALS ────────────────────────── */}
-          <section className="space-y-8 pt-6">
+          <section className="space-y-8 pt-4">
             <div className="text-center max-w-2xl mx-auto space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-flex items-center gap-1">
-                <Quote className="w-3 h-3 text-amber-600" /> Hospitality Wisdom & Partner Testimonials
+              <span className="text-xs font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 px-3.5 py-1 rounded-full border border-amber-700/60 inline-flex items-center gap-1.5">
+                <Quote className="w-3.5 h-3.5 text-amber-400" /> Hospitality Wisdom & Demos
               </span>
-              <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-stone-900">
-                What Culinary Leaders & Restaurateurs Say
+              <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white">
+                What Culinary Leaders & Partners Say
               </h2>
-              <p className="text-stone-600 text-sm">
+              <p className="text-stone-400 text-sm">
                 Real insights on modern waitlist management and table turnover optimization.
               </p>
             </div>
@@ -350,42 +378,42 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 {
-                  quote: 'Good food is all the sweeter when shared with loved ones without standing in long queues.',
+                  quote: 'Good food is all the sweeter when shared with loved ones without standing in long tedious queues.',
                   author: 'Auguste Escoffier',
                   title: 'Culinary Philosophy',
-                  avatarBg: 'bg-amber-100 text-amber-800',
+                  avatarBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
                 },
                 {
                   quote: 'Queue management isn’t just about wait times; it’s about turning anticipation into an unforgettable dining experience.',
                   author: 'Restaurant Operations Quarterly',
                   title: 'Hospitality Digest 2026',
-                  avatarBg: 'bg-orange-100 text-orange-800',
+                  avatarBg: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
                 },
                 {
                   quote: 'Smart Waitlist reduced our weekend walkaways by 40%. Guests love browsing and pre-ordering dishes on WhatsApp before seating!',
                   author: 'Chef Rajesh Kumar',
                   title: 'Executive Chef, Fine Dining Partner',
-                  avatarBg: 'bg-emerald-100 text-emerald-800',
+                  avatarBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
                 },
               ].map((q, idx) => (
                 <div
                   key={idx}
-                  className="bg-gradient-to-br from-white via-stone-50 to-amber-50/30 rounded-3xl border border-stone-200 p-6 space-y-4 shadow-sm hover:shadow-xl transition flex flex-col justify-between"
+                  className="bg-stone-900/90 backdrop-blur-xl rounded-3xl border border-white/10 p-7 space-y-4 shadow-xl hover:border-amber-500/30 transition flex flex-col justify-between"
                 >
                   <div className="space-y-3">
-                    <Quote className="w-8 h-8 text-amber-500/40 fill-amber-500/20" />
-                    <p className="text-sm text-stone-700 italic leading-relaxed font-serif">
+                    <Quote className="w-8 h-8 text-amber-400/40 fill-amber-400/20" />
+                    <p className="text-sm text-stone-200 italic leading-relaxed font-serif">
                       "{q.quote}"
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 pt-4 border-t border-stone-200/60">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs ${q.avatarBg}`}>
+                  <div className="flex items-center gap-3 pt-4 border-t border-white/10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border ${q.avatarBg}`}>
                       {q.author.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                     </div>
                     <div>
-                      <div className="font-bold text-xs text-stone-900">{q.author}</div>
-                      <div className="text-[11px] text-stone-500">{q.title}</div>
+                      <div className="font-bold text-xs text-white">{q.author}</div>
+                      <div className="text-[11px] text-stone-400">{q.title}</div>
                     </div>
                   </div>
                 </div>
@@ -394,10 +422,9 @@ export default function HomePage() {
           </section>
 
           {/* ────────────────────────── GLASSMORPHISM PRICING TABLE ────────────────────────── */}
-          <section className="relative overflow-hidden bg-stone-950 text-white rounded-3xl p-8 sm:p-14 border border-stone-800 shadow-2xl space-y-12">
-            {/* Ambient Glow Orbs */}
+          <section className="relative overflow-hidden bg-stone-950 text-white rounded-3xl p-8 sm:p-14 border border-amber-500/30 shadow-2xl space-y-12">
             <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-amber-500/15 to-orange-500/0 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-gradient-to-tr from-brand-600/15 to-purple-600/0 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-gradient-to-tr from-orange-600/15 to-purple-600/0 rounded-full blur-3xl pointer-events-none" />
 
             {/* Section Header */}
             <div className="text-center max-w-2xl mx-auto space-y-4 relative z-10">
@@ -483,8 +510,7 @@ export default function HomePage() {
               </div>
 
               {/* Tier 2: Pro Restaurant (POPULAR - Highlighted Glass) */}
-              <div className="bg-gradient-to-b from-orange-500/15 via-amber-500/10 to-stone-900/90 backdrop-blur-2xl border-2 border-orange-500/60 rounded-3xl p-8 space-y-6 flex flex-col justify-between transition duration-300 hover:-translate-y-1.5 shadow-2xl shadow-orange-500/15 relative">
-                {/* Popular Badge */}
+              <div className="bg-gradient-to-b from-orange-500/20 via-amber-500/10 to-stone-900/90 backdrop-blur-2xl border-2 border-orange-500/60 rounded-3xl p-8 space-y-6 flex flex-col justify-between transition duration-300 hover:-translate-y-1.5 shadow-2xl shadow-orange-500/15 relative">
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-stone-950 font-black text-[10px] uppercase tracking-widest px-4 py-1 rounded-full shadow-lg flex items-center gap-1">
                   <Crown className="w-3 h-3 fill-stone-950" /> Most Popular Choice
                 </div>
@@ -543,7 +569,7 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* Tier 3: Enterprise & Chains */}
+              {/* Tier 3: Enterprise */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-3xl p-8 space-y-6 flex flex-col justify-between transition duration-300 hover:-translate-y-1 shadow-xl">
                 <div className="space-y-4">
                   <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
@@ -595,64 +621,77 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* ────────────────────────── RESTAURANTS DIRECTORY ────────────────────────── */}
-          <section id="restaurants-section" className="space-y-6 pt-6">
-            {/* Nearby Map Section */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+          {/* ────────────────────────── RESTAURANTS DIRECTORY & MAP ────────────────────────── */}
+          <section id="restaurants-section" className="space-y-8 pt-6">
+            {/* Nearby Map Card */}
+            <div className="bg-stone-900/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-display font-bold text-lg text-surface-900 flex items-center gap-2">
-                    <Navigation className="w-5 h-5 text-brand-600" />
+                  <h3 className="font-display font-bold text-xl text-white flex items-center gap-2">
+                    <Navigation className="w-5 h-5 text-amber-400" />
                     Nearby Restaurants Map
                   </h3>
-                  <p className="text-xs text-stone-500">Allow location access to discover restaurants near you.</p>
+                  <p className="text-xs text-stone-400">Allow location access to discover partner dining places near you.</p>
                 </div>
                 {!userLocation && (
-                  <button onClick={requestLocation} disabled={isLocating} className="btn-primary text-xs px-5 py-2.5 shadow-md">
-                    {isLocating ? 'Locating...' : 'Find Near Me'}
+                  <button
+                    onClick={requestLocation}
+                    disabled={isLocating}
+                    className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition shadow-lg flex items-center justify-center gap-2 shrink-0"
+                  >
+                    <Compass className="w-4 h-4" />
+                    <span>{isLocating ? 'Locating...' : 'Find Near Me'}</span>
                   </button>
                 )}
               </div>
-              {locationError && <div className="text-xs text-red-500 font-medium">{locationError}</div>}
+              {locationError && <div className="text-xs text-rose-400 font-medium">{locationError}</div>}
               {userLocation && (
-                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-stone-200 relative z-0 shadow-inner">
+                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-white/10 relative z-0 shadow-inner">
                   <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={12} style={{ height: '100%', width: '100%' }}>
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" attribution="&copy; OpenStreetMap contributors" />
                     <Marker position={[userLocation.lat, userLocation.lng]}>
                       <Popup>You are here</Popup>
                     </Marker>
-                    {processedRestaurants.map((r) => r.location ? (
-                      <Marker key={r.id} position={[r.location.lat, r.location.lng]}>
-                        <Popup className="rounded-xl min-w-[150px]">
-                          <div className="font-bold text-sm">{r.name}</div>
-                          <div className="text-[11px] text-stone-500 mb-1">{r.activeQueueCount === 0 ? 'No wait time' : `${r.activeQueueCount} waiting`}</div>
-                          <Link to={`/join/${r.slug}`} className="text-brand-600 text-xs font-bold block bg-brand-50 rounded-lg px-2 py-1.5 text-center border border-brand-100 hover:bg-brand-100 transition mt-2">
-                            Join Waitlist
-                          </Link>
-                        </Popup>
-                      </Marker>
-                    ) : null)}
+                    {processedRestaurants.map((r) =>
+                      r.location ? (
+                        <Marker key={r.id} position={[r.location.lat, r.location.lng]}>
+                          <Popup className="rounded-xl min-w-[150px]">
+                            <div className="font-bold text-sm text-stone-900">{r.name}</div>
+                            <div className="text-[11px] text-stone-500 mb-1">
+                              {r.activeQueueCount === 0 ? 'No wait time' : `${r.activeQueueCount} waiting`}
+                            </div>
+                            <Link
+                              to={`/join/${r.slug}`}
+                              className="text-amber-600 font-bold text-xs block bg-amber-50 rounded-lg px-2 py-1.5 text-center border border-amber-200 hover:bg-amber-100 transition mt-2"
+                            >
+                              Join Waitlist
+                            </Link>
+                          </Popup>
+                        </Marker>
+                      ) : null
+                    )}
                   </MapContainer>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-stone-200 pb-4 pt-4">
+            {/* Restaurant Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/10 pb-4 pt-4">
               <div>
-                <h2 className="text-2xl font-bold font-display text-surface-900">
+                <h2 className="text-2xl sm:text-3xl font-bold font-display text-white">
                   Partner Restaurants ({processedRestaurants.length})
                 </h2>
-                <p className="text-xs text-stone-500">Scan QR Code or tap to join waitlist & pre-order dishes</p>
+                <p className="text-xs text-stone-400">Scan QR Code or tap to join waitlist & pre-order dishes</p>
               </div>
 
               <div className="relative max-w-xs w-full">
-                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
+                <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   placeholder="Search restaurant, cuisine, location..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input pl-9 text-xs"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-stone-900 border border-white/10 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500 transition"
                 />
               </div>
             </div>
@@ -660,11 +699,11 @@ export default function HomePage() {
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="card p-6 h-48 animate-pulse bg-stone-100" />
+                  <div key={n} className="rounded-3xl p-6 h-48 animate-pulse bg-stone-900/60 border border-white/10" />
                 ))}
               </div>
             ) : processedRestaurants.length === 0 ? (
-              <div className="card p-12 text-center text-stone-500">
+              <div className="bg-stone-900/60 border border-white/10 rounded-3xl p-12 text-center text-stone-400">
                 No restaurants found matching your search.
               </div>
             ) : (
@@ -672,63 +711,63 @@ export default function HomePage() {
                 {processedRestaurants.map((r) => (
                   <div
                     key={r.id}
-                    className="bg-white rounded-3xl border border-stone-200/90 shadow-sm hover:shadow-xl transition-all p-6 flex flex-col justify-between space-y-4 group"
+                    className="bg-stone-900/90 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-amber-500/40 shadow-xl hover:shadow-2xl transition-all p-6 flex flex-col justify-between space-y-4 group"
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full mb-1.5 border border-brand-200">
+                          <span className="inline-block text-[11px] font-extrabold uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2.5 py-1 rounded-full mb-2 border border-amber-700/60">
                             {r.cuisine || 'Multi-Cuisine'}
                           </span>
-                          <h3 className="font-display text-xl font-bold text-surface-900 group-hover:text-brand-600 transition">
+                          <h3 className="font-display text-xl font-bold text-white group-hover:text-amber-300 transition">
                             {r.name}
                           </h3>
                         </div>
 
                         <button
                           onClick={() => setQrRestaurant(r)}
-                          className="p-2 rounded-xl bg-stone-100 hover:bg-orange-50 text-stone-600 hover:text-orange-600 transition"
+                          className="p-2.5 rounded-2xl bg-white/5 hover:bg-amber-500/20 text-stone-300 hover:text-amber-300 transition border border-white/10"
                           title="View Restaurant QR Code"
                         >
                           <QrCode className="w-5 h-5" />
                         </button>
                       </div>
 
-                      <p className="text-xs text-stone-500 line-clamp-2">
+                      <p className="text-xs text-stone-300 line-clamp-2 leading-relaxed font-light">
                         {r.description || 'Authentic dining experience with instant WhatsApp queue updates.'}
                       </p>
 
-                      <div className="space-y-1.5 text-xs text-stone-500 pt-1">
+                      <div className="space-y-2 text-xs text-stone-400 pt-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 truncate">
-                            <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                            <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                             <span className="truncate">{r.address}</span>
                           </div>
                           {r.distanceKm !== undefined && (
-                            <span className="font-bold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-100 shrink-0 text-[10px]">
+                            <span className="font-bold text-amber-300 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-700/60 shrink-0 text-[10px]">
                               {r.distanceKm.toFixed(1)} km
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                          <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                           <span>{r.openingHours || '11:00 AM - 11:00 PM'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Live Status Bar & Join Button */}
-                    <div className="pt-4 border-t border-stone-100 flex items-center justify-between gap-3">
+                    {/* Live Status & Join Link */}
+                    <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
                       <div className="text-xs">
-                        <div className="font-bold text-surface-900">
+                        <div className="font-bold text-white">
                           {r.activeQueueCount === 0 ? 'No Wait Time' : `${r.activeQueueCount} Parties Waiting`}
                         </div>
-                        <div className="text-[11px] text-stone-500">{r.tableCount} Dining Tables</div>
+                        <div className="text-[11px] text-stone-400">{r.tableCount} Dining Tables</div>
                       </div>
 
                       <Link
                         to={`/join/${r.slug}`}
-                        className="btn-primary text-xs px-4 py-2 flex items-center gap-1 shadow-md"
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-stone-950 font-black text-xs flex items-center gap-1 shadow-md transition active:scale-95"
                       >
                         Join Waitlist <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
@@ -740,22 +779,22 @@ export default function HomePage() {
           </section>
 
           {/* ────────────────────────── PARTNER INQUIRY CTA BANNER ────────────────────────── */}
-          <section className="bg-gradient-to-br from-stone-900 via-stone-950 to-stone-900 text-white rounded-3xl p-8 sm:p-12 border border-stone-800 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+          <section className="bg-gradient-to-br from-amber-950/60 via-stone-900 to-orange-950/60 text-white rounded-3xl p-8 sm:p-12 border border-amber-500/30 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="space-y-3 max-w-xl text-center md:text-left">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-800/60 inline-block">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-400 bg-amber-950/80 px-3.5 py-1 rounded-full border border-amber-700/60 inline-block">
                 Restaurant Partner Onboarding
               </span>
-              <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white">
+              <h2 className="font-display text-3xl sm:text-4xl font-black text-white">
                 Want to Onboard Your Restaurant?
               </h2>
-              <p className="text-stone-300 text-sm leading-relaxed">
+              <p className="text-stone-300 text-sm leading-relaxed font-light">
                 Eliminate walkaways, automate table assignments, and boost dining revenue. Fill our 1-minute inquiry form to get started with instant WhatsApp setup.
               </p>
             </div>
 
             <button
               onClick={() => setShowInquiryModal(true)}
-              className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-extrabold rounded-2xl text-base shadow-xl flex items-center gap-2 transition transform active:scale-95 shrink-0"
+              className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-stone-950 font-black rounded-2xl text-base shadow-xl flex items-center gap-2 transition transform active:scale-95 shrink-0 border border-amber-300/40"
             >
               <Building2 className="w-5 h-5" />
               <span>Inquire Now (Partner With Us)</span>
@@ -764,49 +803,49 @@ export default function HomePage() {
           </section>
 
           {/* ────────────────────────── PORTAL ACCESS ────────────────────────── */}
-          <section className="pt-4 border-t border-stone-200">
+          <section className="pt-4 border-t border-white/10">
             <div className="text-center max-w-xl mx-auto mb-8 space-y-1">
-              <h3 className="font-display text-xl font-bold text-surface-900">Staff & Admin Operations</h3>
-              <p className="text-xs text-stone-500">Access staff panels, kitchen displays, or restaurant administration</p>
+              <h3 className="font-display text-xl font-bold text-white">Staff & Admin Operations</h3>
+              <p className="text-xs text-stone-400">Access staff panels, kitchen displays, or restaurant administration</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-4">
               <Link
                 to="/staff"
-                className="card p-5 flex items-center gap-4 hover:border-brand-300 hover:shadow-lg transition-all group"
+                className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-5 rounded-3xl flex items-center gap-4 hover:border-amber-500/40 hover:shadow-xl transition group"
               >
-                <div className="w-11 h-11 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-surface-900 group-hover:text-brand-600 transition text-sm">Staff Panel</div>
-                  <div className="text-xs text-stone-500">Table seating & queue management</div>
+                  <div className="font-bold text-white group-hover:text-amber-300 transition text-sm">Staff Panel</div>
+                  <div className="text-xs text-stone-400">Table seating & queue management</div>
                 </div>
               </Link>
 
               <Link
                 to="/kitchen"
-                className="card p-5 flex items-center gap-4 hover:border-brand-300 hover:shadow-lg transition-all group"
+                className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-5 rounded-3xl flex items-center gap-4 hover:border-orange-500/40 hover:shadow-xl transition group"
               >
-                <div className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center shrink-0">
                   <ChefHat className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-surface-900 group-hover:text-amber-600 transition text-sm">Kitchen Display (KDS)</div>
-                  <div className="text-xs text-stone-500">Drag & Drop order cooking board</div>
+                  <div className="font-bold text-white group-hover:text-orange-300 transition text-sm">Kitchen Display (KDS)</div>
+                  <div className="text-xs text-stone-400">Drag & Drop order cooking board</div>
                 </div>
               </Link>
 
               <Link
                 to="/admin"
-                className="card p-5 flex items-center gap-4 hover:border-brand-300 hover:shadow-lg transition-all group"
+                className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-5 rounded-3xl flex items-center gap-4 hover:border-emerald-500/40 hover:shadow-xl transition group"
               >
-                <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
                   <LayoutDashboard className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-surface-900 group-hover:text-emerald-600 transition text-sm">Admin Dashboard</div>
-                  <div className="text-xs text-stone-500">Restaurant configuration & analytics</div>
+                  <div className="font-bold text-white group-hover:text-emerald-300 transition text-sm">Admin Dashboard</div>
+                  <div className="text-xs text-stone-400">Restaurant configuration & analytics</div>
                 </div>
               </Link>
             </div>
@@ -815,14 +854,14 @@ export default function HomePage() {
       </div>
 
       {/* ────────────────────────── COMPREHENSIVE FOOTER ────────────────────────── */}
-      <footer className="bg-stone-950 text-white border-t border-stone-800 pt-16 pb-12 mt-16">
+      <footer className="bg-stone-950 text-white border-t border-white/10 pt-16 pb-12 mt-16 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
           {/* Main 4-Column Footer Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-            {/* Column 1: Brand & Bio (Spans 2 cols) */}
+            {/* Column 1: Brand & Bio */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-stone-950 font-black shadow-lg">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-stone-950 font-black shadow-lg">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <span className="font-display font-black text-2xl text-white tracking-tight">
@@ -830,8 +869,8 @@ export default function HomePage() {
                 </span>
               </div>
 
-              <p className="text-stone-400 text-xs leading-relaxed max-w-sm">
-                Revolutionizing restaurant waitlists with WhatsApp-native queueing, pre-seating dish pre-orders, smart table assignments, and live drag & drop kitchen displays.
+              <p className="text-stone-400 text-xs leading-relaxed max-w-sm font-light">
+                Revolutionizing restaurant waitlists with WebGL 3D table views, WhatsApp-native queueing, dish pre-orders, and live drag & drop kitchen displays.
               </p>
 
               {/* Trust Badges */}
@@ -881,10 +920,10 @@ export default function HomePage() {
               </ul>
             </div>
 
-            {/* Column 4: Social Media & Connect */}
+            {/* Column 4: Social Media */}
             <div className="space-y-4">
               <h4 className="font-display font-bold text-sm text-white uppercase tracking-wider">Follow & Connect</h4>
-              <p className="text-xs text-stone-400 leading-relaxed">
+              <p className="text-xs text-stone-400 leading-relaxed font-light">
                 Connect with our team for live demos, updates, and product announcements.
               </p>
 
