@@ -14,7 +14,9 @@ export function useRestaurantState(onSocketEvent?: (event: string, data: unknown
     queryKey: ['restaurantSync', restaurantId],
     queryFn: () => api.getSyncState(restaurantId!),
     enabled: !!restaurantId,
-    staleTime: 10000,
+    staleTime: 1000,
+    refetchInterval: 2500, // 2.5s guaranteed polling fallback for real-time kitchen & staff sync
+    refetchOnWindowFocus: true,
   });
 
   const handleSocketEvent = useCallback(
@@ -30,14 +32,19 @@ export function useRestaurantState(onSocketEvent?: (event: string, data: unknown
       }
 
       const relevant = [
+        'restaurant:sync',
         'queue:updated',
         'queue:joined',
         'queue:notified',
         'queue:onMyWay',
+        'queue:seated',
+        'queue:cancelled',
         'table:statusChanged',
         'order:created',
+        'order:updated',
         'order:cooking',
         'order:ready',
+        'order:completed',
       ];
 
       if (relevant.includes(event)) {

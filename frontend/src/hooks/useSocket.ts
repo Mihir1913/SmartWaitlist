@@ -32,10 +32,14 @@ export function useSocket(restaurantId: string | undefined, onEvent?: EventCallb
       'queue:joined',
       'queue:notified',
       'queue:onMyWay',
+      'queue:seated',
+      'queue:cancelled',
       'table:statusChanged',
       'order:created',
+      'order:updated',
       'order:cooking',
       'order:ready',
+      'order:completed',
     ];
 
     events.forEach((event) => {
