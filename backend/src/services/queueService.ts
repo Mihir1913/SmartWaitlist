@@ -1,6 +1,7 @@
 import { Restaurant } from '../models/Restaurant.js';
 import { Table } from '../models/Table.js';
 import { QueueEntry } from '../models/QueueEntry.js';
+import { Order } from '../models/Order.js';
 import { emitToRestaurant, emitRestaurantSync } from './socket.js';
 import { getRestaurantSyncState } from './syncService.js';
 
@@ -107,15 +108,32 @@ export async function recalculateQueuePositions(restaurantId: string) {
   const totalTablesCount = await Table.countDocuments({ restaurantId });
   const totalTables = Math.max(1, totalTablesCount);
   const avgTurnover = restaurant?.settings.avgTurnoverMinutes ?? 45;
-  const timePerPosition = Math.max(3, Math.ceil(avgTurnover / totalTables));
+
+  // Active kitchen load: count orders currently cooking or pending in kitchen
+  const activeKitchenOrders = await Order.countDocuments({
+    restaurantId,
+    status: { $in: ['confirmed', 'cooking'] },
+  });
+  const kitchenLoadDelay = Math.min(10, Math.floor(activeKitchenOrders / 3));
+
+  // Time throughput per table position (e.g., 45 mins / 8 tables = ~6 mins per slot)
+  const baseTimePerPosition = Math.max(3, Math.ceil(avgTurnover / totalTables));
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
     entry.position = i + 1;
+
     if (entry.assignedTableId || entry.status === 'notified' || entry.status === 'on_my_way') {
       entry.estimatedWaitMinutes = 5;
     } else {
-      entry.estimatedWaitMinutes = Math.max(5, Math.min(60, i * timePerPosition + 5));
+      let waitMinutes = i * baseTimePerPosition + 5 + kitchenLoadDelay;
+
+      // Pre-order bonus: Pre-cooked dishes speed up dining turnover & seating readiness
+      if (entry.preOrderId) {
+        waitMinutes = Math.max(5, waitMinutes - 5);
+      }
+
+      entry.estimatedWaitMinutes = Math.max(5, Math.min(45, waitMinutes));
     }
     await entry.save();
   }
