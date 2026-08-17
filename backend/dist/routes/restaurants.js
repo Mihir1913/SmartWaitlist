@@ -211,8 +211,8 @@ router.put('/my-restaurant', authMiddleware, requireRole('owner'), async (req, r
         res.status(500).json({ error: 'Failed to update restaurant profile' });
     }
 });
-// GET /api/restaurants/my-restaurant/menu - Get full menu (including unavailable items)
-router.get('/my-restaurant/menu', authMiddleware, requireRole('owner'), async (req, res) => {
+// GET /api/restaurants/my-restaurant/menu - Get full menu (accessible to owner, staff, kitchen)
+router.get('/my-restaurant/menu', authMiddleware, async (req, res) => {
     try {
         const restaurantId = req.user?.restaurantId;
         if (!restaurantId)

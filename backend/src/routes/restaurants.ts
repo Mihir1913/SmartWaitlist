@@ -224,8 +224,8 @@ router.put('/my-restaurant', authMiddleware, requireRole('owner'), async (req: A
   }
 });
 
-// GET /api/restaurants/my-restaurant/menu - Get full menu (including unavailable items)
-router.get('/my-restaurant/menu', authMiddleware, requireRole('owner'), async (req: AuthRequest, res) => {
+// GET /api/restaurants/my-restaurant/menu - Get full menu (accessible to owner, staff, kitchen)
+router.get('/my-restaurant/menu', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const restaurantId = req.user?.restaurantId;
     if (!restaurantId) return res.status(400).json({ error: 'No restaurant assigned' });

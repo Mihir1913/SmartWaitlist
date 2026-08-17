@@ -240,12 +240,34 @@ export default function StaffPanel() {
   const [staffNotes, setStaffNotes] = useState<Record<string, string>>({});
   const [isAddingDishes, setIsAddingDishes] = useState(false);
 
-  const { data: menuData } = useQuery({
+  const { data: menuData, isLoading: menuLoading } = useQuery({
     queryKey: ['staffPanelMenuData', user?.restaurantId],
     queryFn: () => api.getOwnerMenu().catch(() => ({ categories: [], items: [] })),
     enabled: !!addDishesEntry,
   });
-  const menuCategories = menuData?.categories ?? [];
+
+  const groupedCategories = useMemo(() => {
+    const cats = menuData?.categories ?? [];
+    const items = (menuData?.items ?? []).filter((i) => i.isAvailable !== false);
+    if (cats.length === 0 && items.length > 0) {
+      return [{ _id: 'all', name: 'Menu Dishes', items }];
+    }
+    const result = cats
+      .map((cat) => ({
+        ...cat,
+        items: items.filter(
+          (i) => i.categoryId === cat._id || (i.categoryId as any)?._id === cat._id
+        ),
+      }))
+      .filter((c) => c.items.length > 0);
+
+    const assignedItemIds = new Set(result.flatMap((c) => c.items.map((i) => i._id)));
+    const unassignedItems = items.filter((i) => !assignedItemIds.has(i._id));
+    if (unassignedItems.length > 0) {
+      result.push({ _id: 'other', name: 'Other Dishes', items: unassignedItems });
+    }
+    return result;
+  }, [menuData]);
 
   const tables: Table[] = state?.tables ?? [];
   const queue: QueueEntry[] = state?.queue ?? [];
@@ -788,42 +810,57 @@ export default function StaffPanel() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {menuCategories.map((cat: any) => (
-                <div key={cat._id} className="space-y-2">
-                  <h4 className="font-bold text-xs text-stone-500 uppercase tracking-wider">{cat.name}</h4>
-                  <div className="space-y-2">
-                    {cat.items.map((item: MenuItem) => {
-                      const qty = staffCart[item._id] || 0;
-                      return (
-                        <div key={item._id} className="flex items-center justify-between p-3 rounded-2xl border border-stone-200 bg-stone-50/50">
-                          <div>
-                            <p className="font-bold text-xs text-stone-900">{item.name}</p>
-                            <p className="text-xs font-mono text-orange-600 font-bold">₹{item.price}</p>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {qty > 0 && (
-                              <button
-                                onClick={() => setStaffCart((prev) => ({ ...prev, [item._id]: Math.max(0, qty - 1) }))}
-                                className="w-7 h-7 rounded-lg bg-stone-200 hover:bg-stone-300 font-bold text-xs"
-                              >
-                                -
-                              </button>
-                            )}
-                            {qty > 0 && <span className="font-mono font-bold text-xs px-1">{qty}</span>}
-                            <button
-                              onClick={() => setStaffCart((prev) => ({ ...prev, [item._id]: qty + 1 }))}
-                              className="w-7 h-7 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+              {menuLoading ? (
+                <div className="py-12 text-center text-stone-400">
+                  <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-xs">Loading menu items...</p>
                 </div>
-              ))}
+              ) : groupedCategories.length === 0 ? (
+                <div className="py-12 text-center text-stone-400">
+                  <UtensilsCrossed className="w-10 h-10 text-stone-300 mx-auto mb-2" />
+                  <p className="font-bold text-sm text-stone-700">No Menu Items Found</p>
+                  <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
+                    Please add menu items from the Owner Portal (Menu tab) to select dishes here.
+                  </p>
+                </div>
+              ) : (
+                groupedCategories.map((cat: any) => (
+                  <div key={cat._id} className="space-y-2">
+                    <h4 className="font-bold text-xs text-stone-500 uppercase tracking-wider">{cat.name}</h4>
+                    <div className="space-y-2">
+                      {cat.items.map((item: MenuItem) => {
+                        const qty = staffCart[item._id] || 0;
+                        return (
+                          <div key={item._id} className="flex items-center justify-between p-3 rounded-2xl border border-stone-200 bg-stone-50/50">
+                            <div>
+                              <p className="font-bold text-xs text-stone-900">{item.name}</p>
+                              <p className="text-xs font-mono text-orange-600 font-bold">₹{item.price}</p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {qty > 0 && (
+                                <button
+                                  onClick={() => setStaffCart((prev) => ({ ...prev, [item._id]: Math.max(0, qty - 1) }))}
+                                  className="w-7 h-7 rounded-lg bg-stone-200 hover:bg-stone-300 font-bold text-xs"
+                                >
+                                  -
+                                </button>
+                              )}
+                              {qty > 0 && <span className="font-mono font-bold text-xs px-1">{qty}</span>}
+                              <button
+                                onClick={() => setStaffCart((prev) => ({ ...prev, [item._id]: qty + 1 }))}
+                                className="w-7 h-7 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="pt-2 border-t border-stone-100 flex items-center justify-between">
