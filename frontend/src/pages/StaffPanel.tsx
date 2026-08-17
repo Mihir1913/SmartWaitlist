@@ -33,7 +33,14 @@ function timeAgo(dateStr: string): string {
   const mins = Math.floor(secs / 60);
   if (mins < 60) return `${mins} min ago`;
   const hrs = Math.floor(mins / 60);
-  return `${hrs}h ${mins % 60}m ago`;
+  if (hrs < 24) return `${hrs} hr ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function formatTableName(num: string | undefined): string {
+  if (!num) return 'Table';
+  const clean = num.toString().replace(/^T+/i, '');
+  return `Table ${clean}`;
 }
 
 function formatTime(d: Date): string {
@@ -474,8 +481,8 @@ export default function StaffPanel() {
                       {/* ── Row 1: number + badge ── */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl font-extrabold text-stone-800 tracking-tight">
-                            T{table.number}
+                          <span className="text-xl font-extrabold text-stone-900 tracking-tight">
+                            {formatTableName(table.number)}
                           </span>
                           {(table.status === 'ready' || assigned) && (
                             <span className="relative flex h-2.5 w-2.5">
@@ -489,14 +496,14 @@ export default function StaffPanel() {
                             assigned ? 'bg-amber-100 text-amber-800 border border-amber-300' : cfg.badge
                           }`}
                         >
-                          {assigned ? `Reserved (${assigned.customer.name})` : cfg.label}
+                          {assigned ? `Assigned to ${assigned.customer.name}` : cfg.label}
                         </span>
                       </div>
 
                       {/* ── Row 2: capacity ── */}
                       <div className="flex items-center gap-1.5 text-stone-500 text-sm mb-1">
                         <Users className="w-4 h-4" />
-                        <span>Capacity: {table.capacity}</span>
+                        <span>Capacity: {table.capacity} Guests</span>
                       </div>
 
                       {/* ── Assigned guest pill ── */}
@@ -508,7 +515,7 @@ export default function StaffPanel() {
                               {assigned.customer.name}
                             </p>
                             <p className="text-[11px] text-amber-700 font-semibold">
-                              {assigned.partySize} guest{assigned.partySize > 1 ? 's' : ''} • Table Assigned
+                              {assigned.partySize} guest{assigned.partySize > 1 ? 's' : ''} • Ready to be Seated
                             </p>
                           </div>
                         </div>
@@ -524,7 +531,7 @@ export default function StaffPanel() {
                             disabled={mutating}
                             className="w-full text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl shadow transition"
                           >
-                            {mutating ? 'Seating Guest…' : `Seat ${assigned.customer.name} (Mark Seated)`}
+                            {mutating ? 'Seating Guest…' : `Confirm Guest Seated (${assigned.customer.name})`}
                           </button>
                         ) : cfg.buttonLabel && cfg.nextStatus ? (
                           <button
@@ -676,7 +683,7 @@ export default function StaffPanel() {
                                         : 'text-amber-600'
                                     }`}
                                   >
-                                    &rarr; T{entry.assignedTableId.number}
+                                    &rarr; {formatTableName(entry.assignedTableId.number)}
                                   </span>
                                 )}
                             </div>
@@ -689,12 +696,12 @@ export default function StaffPanel() {
                                     const targetTableId = typeof entry.assignedTableId === 'object' ? (entry.assignedTableId as any)._id : entry.assignedTableId;
                                     const tableNum = typeof entry.assignedTableId === 'object' ? entry.assignedTableId.number : '';
                                     updateStatus.mutate({ tableId: targetTableId, status: 'occupied' });
-                                    showToast(`Seated ${entry.customer.name} at Table T${tableNum}!`, 'success');
+                                    showToast(`Seated ${entry.customer.name} at ${formatTableName(tableNum)}!`, 'success');
                                   }}
                                   className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition flex items-center gap-1 shadow-sm"
                                 >
                                   <Armchair className="w-3 h-3 text-white" />
-                                  <span>Seat at T{typeof entry.assignedTableId === 'object' ? entry.assignedTableId.number : ''}</span>
+                                  <span>Seat at {formatTableName(typeof entry.assignedTableId === 'object' ? entry.assignedTableId.number : '')}</span>
                                 </button>
                               )}
 

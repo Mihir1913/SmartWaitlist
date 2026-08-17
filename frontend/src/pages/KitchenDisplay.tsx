@@ -146,7 +146,7 @@ function KitchenOrderCard({
               </span>
               {qe?.assignedTableId && typeof qe.assignedTableId === 'object' && (
                 <span className="font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                  T{qe.assignedTableId.number}
+                  Table {qe.assignedTableId.number.replace(/^T+/i, '')}
                 </span>
               )}
               {order.paymentStatus === 'paid' ? (
