@@ -39,6 +39,7 @@ export default function SuperAdminDashboard() {
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showWipeModal, setShowWipeModal] = useState(false);
   const [editRestaurant, setEditRestaurant] = useState<SuperAdminRestaurant | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SuperAdminRestaurant | null>(null);
   const [addUserTarget, setAddUserTarget] = useState<SuperAdminRestaurant | null>(null);
@@ -252,6 +253,22 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleWipeAllRestaurants = async () => {
+    setSubmitting(true);
+    setModalError('');
+    try {
+      await api.wipeAllRestaurants();
+      setSuccessMsg('Successfully removed all restaurants and associated data! SuperAdmin preserved.');
+      setShowWipeModal(false);
+      fetchRestaurants();
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : 'Failed to wipe restaurants');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addUserTarget) return;
@@ -435,6 +452,17 @@ export default function SuperAdminDashboard() {
                   className="w-full bg-stone-800/80 border border-stone-700 text-white rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                 />
               </div>
+
+              <button
+                onClick={() => {
+                  setModalError('');
+                  setShowWipeModal(true);
+                }}
+                className="flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Wipe All Restaurants
+              </button>
 
               <button
                 onClick={() => {
@@ -1146,6 +1174,51 @@ export default function SuperAdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* WIPE ALL RESTAURANTS CONFIRMATION MODAL */}
+      {showWipeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/85 backdrop-blur-sm">
+          <div className="bg-stone-900 border border-stone-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 flex items-center justify-center">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Wipe All Restaurants & Related Data?</h3>
+              <p className="text-sm text-stone-400 mt-2 leading-relaxed">
+                This will permanently delete <strong className="text-red-400">ALL restaurants</strong>, menus, table configurations, waitlists, active orders, staff accounts, and activity logs across the platform.
+              </p>
+              <div className="mt-3 bg-amber-500/10 border border-amber-500/20 text-amber-300 p-3 rounded-xl text-xs flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Your <strong>SuperAdmin</strong> user account will be strictly preserved.</span>
+              </div>
+            </div>
+
+            {modalError && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs">
+                {modalError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-stone-800">
+              <button
+                type="button"
+                onClick={() => setShowWipeModal(false)}
+                className="px-4 py-2 rounded-xl text-stone-300 hover:bg-stone-800 transition text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleWipeAllRestaurants}
+                disabled={submitting}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2 rounded-xl transition text-sm disabled:opacity-50"
+              >
+                {submitting ? 'Wiping All Data...' : 'Yes, Wipe Everything'}
+              </button>
+            </div>
           </div>
         </div>
       )}

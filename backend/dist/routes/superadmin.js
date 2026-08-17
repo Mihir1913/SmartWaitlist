@@ -245,6 +245,18 @@ router.post('/restaurants/:id/users', async (req, res) => {
         res.status(500).json({ error: 'Failed to create user' });
     }
 });
+// POST /api/superadmin/wipe-restaurants - Remove all restaurants and all related data, preserve SuperAdmin
+router.post('/wipe-restaurants', async (req, res) => {
+    try {
+        const { removeAllRestaurantsData } = await import('../services/seedService.js');
+        await removeAllRestaurantsData();
+        res.json({ message: 'All restaurants and related data removed successfully. SuperAdmin preserved.' });
+    }
+    catch (err) {
+        console.error('Wipe restaurants error:', err);
+        res.status(500).json({ error: 'Failed to remove restaurants and related data' });
+    }
+});
 // POST /api/superadmin/reset-database - Reset database, preserve SuperAdmin, create fresh restaurant & menu
 router.post('/reset-database', async (req, res) => {
     try {

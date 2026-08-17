@@ -321,6 +321,11 @@ export const api = {
 
   getAuditLogs: () => request<any[]>('/superadmin/audit-logs'),
 
+  wipeAllRestaurants: () =>
+    request<{ message: string }>('/superadmin/wipe-restaurants', {
+      method: 'POST',
+    }),
+
   // Restaurant Owner Management APIs
   getMyRestaurant: () =>
     request<{ restaurant: import('../types').Restaurant }>('/restaurants/my-restaurant'),

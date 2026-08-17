@@ -6,7 +6,43 @@ import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { User } from '../models/User.js';
 import { QueueEntry } from '../models/QueueEntry.js';
 import { Order } from '../models/Order.js';
+import { WhatsAppLog } from '../models/WhatsAppLog.js';
+import { WhatsAppSettings } from '../models/WhatsAppSettings.js';
+import { AuditLog } from '../models/AuditLog.js';
 import { config } from '../config/index.js';
+
+export async function removeAllRestaurantsData() {
+  console.log('[Database-Wipe] Preserving SuperAdmin while wiping all restaurant profiles and related data...');
+
+  const existingSuperAdmin = await User.findOne({ role: 'superadmin' });
+
+  await Promise.all([
+    Restaurant.deleteMany({}),
+    Table.deleteMany({}),
+    MenuCategory.deleteMany({}),
+    MenuItem.deleteMany({}),
+    User.deleteMany({ role: { $ne: 'superadmin' } }),
+    QueueEntry.deleteMany({}),
+    Order.deleteMany({}),
+    WhatsAppLog.deleteMany({}),
+    WhatsAppSettings.deleteMany({}),
+    AuditLog.deleteMany({}),
+  ]);
+
+  if (!existingSuperAdmin) {
+    const adminPasswordHash = await bcrypt.hash(config.superAdminPassword, 10);
+    await User.create({
+      email: config.superAdminEmail,
+      password: adminPasswordHash,
+      name: 'Main Platform Admin',
+      role: 'superadmin',
+    });
+    console.log('[Database-Wipe] Created fresh default SuperAdmin user account.');
+  }
+
+  console.log('[Database-Wipe] ✅ Successfully removed all restaurants and associated details. SuperAdmin preserved!');
+  return true;
+}
 
 export async function clearDummyData() {
   console.log('[Clear-Data] Wiping queue entries, orders, and resetting all tables to available...');
@@ -18,6 +54,7 @@ export async function clearDummyData() {
   console.log('[Clear-Data] ✅ All dummy queue entries and orders cleared cleanly!');
   return true;
 }
+
 
 const ahmedabadRestaurants = [
   {
