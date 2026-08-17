@@ -333,16 +333,18 @@ export default function StaffPanel() {
               <Armchair className="w-5 h-5 text-white" />
             </div>
             <div className="leading-tight">
-              <h1 className="font-display font-bold text-lg text-stone-900 flex items-center gap-2">
+              <h1 className="font-display font-bold text-lg text-stone-900 flex items-center gap-2 flex-wrap">
                 <span className="text-brand-600 font-extrabold">{restaurantName}</span>
-                <span className="text-stone-400 font-normal text-sm">— Staff Panel</span>
+                <span className="bg-brand-500/10 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-full border border-brand-500/20">
+                  Table Assignment & Floor Seating
+                </span>
               </h1>
-              <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-medium">
+              <div className="flex items-center gap-1.5 text-[11px] text-stone-500 font-medium">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                 </span>
-                Live Sync Active
+                Floor Host / Waiter Desk • Live Sync Active
               </div>
             </div>
           </div>

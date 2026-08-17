@@ -156,11 +156,13 @@ export default function AdminDashboard() {
               <Store className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div>
-              <h1 className="font-display text-xl font-bold text-surface-900 flex items-center gap-2">
+              <h1 className="font-display text-xl font-bold text-surface-900 flex items-center gap-2 flex-wrap">
                 <span className="text-brand-600 font-extrabold">{currentRestaurantName}</span>
-                <span className="text-stone-400 font-medium text-base">— Owner Admin Panel</span>
+                <span className="bg-brand-50 text-brand-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-brand-200">
+                  Restaurant Owner & Manager Portal
+                </span>
               </h1>
-              <p className="text-xs text-stone-500">Live Management & Operations</p>
+              <p className="text-xs text-stone-500">Manage table layouts, menu items, staff accounts, QR standees & analytics</p>
             </div>
           </div>
 

@@ -315,15 +315,15 @@ export default function SuperAdminDashboard() {
               <ShieldCheck className="w-6 h-6 text-stone-950 stroke-[2.5]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="font-display text-xl font-bold text-white tracking-tight">
-                  Main Admin Portal
+                  Platform SuperAdmin Control Center
                 </h1>
                 <span className="bg-amber-500/10 text-amber-400 text-xs font-semibold px-2 py-0.5 rounded-full border border-amber-500/20">
-                  Superadmin
+                  Main SuperAdmin
                 </span>
               </div>
-              <p className="text-xs text-stone-400">Platform & Restaurant Management</p>
+              <p className="text-xs text-stone-400">Platform-wide restaurant creation, data wipe & system audit logs</p>
             </div>
           </div>
 

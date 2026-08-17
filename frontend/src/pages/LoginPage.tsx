@@ -54,18 +54,26 @@ export default function LoginPage() {
             Real-time table management, kitchen display, and analytics — all in one place.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { value: '3', label: 'Button staff panel' },
-            { value: 'Live', label: 'Kitchen sync' },
-            { value: '20 min', label: 'Setup time' },
-            { value: '6x', label: 'ROI' },
-          ].map((s) => (
-            <div key={s.label} className="bg-white/5 rounded-xl p-4">
-              <div className="text-2xl font-bold text-brand-400">{s.value}</div>
-              <div className="text-sm text-stone-400">{s.label}</div>
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-brand-400">4 Role-Based Portals</p>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="font-bold text-white">1. Owner Portal</div>
+              <div className="text-[11px] text-stone-400 mt-0.5">Tables, Menu & Settings (/admin)</div>
             </div>
-          ))}
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="font-bold text-white">2. Table Seating Staff</div>
+              <div className="text-[11px] text-stone-400 mt-0.5">Seat Guests & Assign Tables (/staff)</div>
+            </div>
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="font-bold text-white">3. Kitchen Chef KDS</div>
+              <div className="text-[11px] text-stone-400 mt-0.5">Live Cooking Stream (/kitchen)</div>
+            </div>
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="font-bold text-white">4. Platform SuperAdmin</div>
+              <div className="text-[11px] text-stone-400 mt-0.5">System Control Center (/superadmin)</div>
+            </div>
+          </div>
         </div>
       </div>
 

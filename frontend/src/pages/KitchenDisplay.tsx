@@ -315,15 +315,17 @@ export default function KitchenDisplay() {
             <ChefHat className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-display font-extrabold text-xl text-white flex items-center gap-2">
+            <h1 className="font-display font-extrabold text-xl text-white flex items-center gap-2 flex-wrap">
               <span className="text-orange-400 font-black">{restaurantName}</span>
-              <span className="text-stone-400 font-medium font-display text-base">— Kitchen Display System (KDS)</span>
-              <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                Live Sync Active
+              <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2.5 py-0.5 rounded-full font-bold text-xs">
+                Kitchen Cooking & Chef Order Display (KDS)
+              </span>
+              <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                Live Cooking Stream
               </span>
             </h1>
             <p className="text-xs text-stone-400 mt-0.5">
-              Drag & Drop Orders to Update Live Cooking Status Across Staff Tablets
+              Live Chef Station • Drag & Drop orders to update cooking status across staff tablets
             </p>
           </div>
         </div>
