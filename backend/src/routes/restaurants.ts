@@ -9,7 +9,6 @@ import { User } from '../models/User.js';
 import { Inquiry } from '../models/Inquiry.js';
 import { getWhatsAppJoinUrl } from '../services/whatsappService.js';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth.js';
-import { runSeed } from '../services/seedService.js';
 
 const router = Router();
 
@@ -147,16 +146,6 @@ router.get('/:slug', async (req, res) => {
       restaurant = await Restaurant.findOne({
         name: { $regex: new RegExp(`^${safeNameRegex}$`, 'i') },
       });
-    }
-
-    // Tier 3: Auto-seed if database has 0 restaurants
-    if (!restaurant) {
-      const count = await Restaurant.countDocuments();
-      if (count === 0) {
-        console.log('[Auto-Seed] No restaurants found in DB. Triggering auto-seed...');
-        await runSeed(true);
-        restaurant = await Restaurant.findOne();
-      }
     }
 
     if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });

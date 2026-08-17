@@ -9,6 +9,19 @@ import { WhatsAppLog } from '../models/WhatsAppLog.js';
 import { WhatsAppSettings } from '../models/WhatsAppSettings.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { config } from '../config/index.js';
+export async function ensureSuperAdmin() {
+    const existingSuperAdmin = await User.findOne({ role: 'superadmin' });
+    if (!existingSuperAdmin) {
+        const adminPasswordHash = await bcrypt.hash(config.superAdminPassword, 10);
+        await User.create({
+            email: config.superAdminEmail,
+            password: adminPasswordHash,
+            name: 'Main Platform Admin',
+            role: 'superadmin',
+        });
+        console.log('[SuperAdmin] Created default SuperAdmin user account.');
+    }
+}
 export async function removeAllRestaurantsData() {
     console.log('[Database-Wipe] Preserving SuperAdmin while wiping all restaurant profiles and related data...');
     const existingSuperAdmin = await User.findOne({ role: 'superadmin' });
