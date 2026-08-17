@@ -36,11 +36,16 @@ import {
   Compass,
   Layers,
   Box,
+  Timer,
+  Smile,
+  Sliders,
+  Filter,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import QRCodeModal from '../components/QRCodeModal';
 import InquiryModal from '../components/InquiryModal';
 import Restaurant3DCanvas from '../components/Restaurant3DCanvas';
+import LiveWaitlistSimulator from '../components/LiveWaitlistSimulator';
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -82,10 +87,15 @@ export default function HomePage() {
   const [qrRestaurant, setQrRestaurant] = useState<PublicRestaurant | null>(null);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCuisineCategory, setSelectedCuisineCategory] = useState<string>('All');
   const [annualBilling, setAnnualBilling] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+
+  // Interactive Wait-Time Savings Calculator State
+  const [diningPerMonth, setDiningPerMonth] = useState<number>(4);
+  const [groupSize, setGroupSize] = useState<number>(3);
 
   const requestLocation = () => {
     setIsLocating(true);
@@ -135,12 +145,18 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredRestaurants = restaurants.filter(
-    (r) =>
+  const filteredRestaurants = restaurants.filter((r) => {
+    const matchesSearch =
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.cuisine?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      r.address.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      selectedCuisineCategory === 'All' ||
+      (r.cuisine && r.cuisine.toLowerCase().includes(selectedCuisineCategory.toLowerCase()));
+
+    return matchesSearch && matchesCategory;
+  });
 
   let processedRestaurants = [...filteredRestaurants];
   if (userLocation) {
@@ -166,6 +182,10 @@ export default function HomePage() {
         return 0;
       });
   }
+
+  // Calculated Wait Time Savings
+  const hoursSavedPerYear = Math.round((diningPerMonth * 12 * 25) / 60); // avg 25 mins saved per visit
+  const dollarsValueSaved = hoursSavedPerYear * 350; // estimated time value in INR
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 font-sans selection:bg-amber-500 selection:text-stone-950 flex flex-col justify-between overflow-x-hidden">
@@ -220,7 +240,6 @@ export default function HomePage() {
         {/* ────────────────────────── 3D HERO SHOWCASE SECTION ────────────────────────── */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 space-y-20">
           <section className="pt-10 pb-6 space-y-10 relative">
-            {/* Ambient Background Lights */}
             <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-r from-amber-500/15 via-orange-500/20 to-amber-600/15 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="text-center space-y-6 relative z-10">
@@ -260,14 +279,111 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* ────────────────────────── 3D CANVAS COMPONENT ────────────────────────── */}
-            <div className="relative z-10 pt-4">
-              <Restaurant3DCanvas
-                activeQueueCount={stats.totalQueues > 0 ? stats.totalQueues : 8}
-                onSelectTable={(table) => {
-                  console.log('Selected 3D Table:', table);
-                }}
-              />
+            {/* ────────────────────────── 3D CANVAS & LIVE SIMULATOR GRID ────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10 pt-4">
+              <div className="lg:col-span-7">
+                <Restaurant3DCanvas
+                  activeQueueCount={stats.totalQueues > 0 ? stats.totalQueues : 8}
+                  onSelectTable={(table) => {
+                    console.log('Selected 3D Table:', table);
+                  }}
+                />
+              </div>
+
+              <div className="lg:col-span-5">
+                <LiveWaitlistSimulator />
+              </div>
+            </div>
+          </section>
+
+          {/* ────────────────────────── INTERACTIVE WAIT-TIME SAVINGS CALCULATOR WIDGET ────────────────────────── */}
+          <section className="bg-gradient-to-br from-amber-950/40 via-stone-900 to-stone-950 rounded-3xl p-8 sm:p-12 border border-amber-500/30 shadow-2xl space-y-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-700/60 inline-flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-amber-400" /> Dynamic ROI Tool
+                </span>
+                <h2 className="font-display text-2xl sm:text-4xl font-black text-white mt-2">
+                  Interactive Wait-Time Savings Calculator
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-400">
+                  Adjust your dining habits below to discover how many hours of queue frustration Smart Waitlist saves you.
+                </p>
+              </div>
+
+              <div className="bg-stone-900 border border-amber-500/40 p-4 rounded-2xl text-center shrink-0 shadow-lg">
+                <div className="text-[10px] uppercase font-bold text-amber-400">Estimated Annual Hours Saved</div>
+                <div className="font-display font-black text-3xl sm:text-4xl text-emerald-400">
+                  {hoursSavedPerYear} Hours
+                </div>
+                <div className="text-[11px] text-stone-400">~₹{dollarsValueSaved.toLocaleString()} in Saved Time Value</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Sliders Input */}
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-stone-300 mb-2">
+                    <span>Dining Out Frequency per Month</span>
+                    <span className="text-amber-400 font-black">{diningPerMonth} Times / Mo</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={15}
+                    value={diningPerMonth}
+                    onChange={(e) => setDiningPerMonth(Number(e.target.value))}
+                    className="w-full h-2.5 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-stone-500 mt-1">
+                    <span>1 (Occasional)</span>
+                    <span>15 (Frequent Diner)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-stone-300 mb-2">
+                    <span>Average Group / Family Size</span>
+                    <span className="text-amber-400 font-black">{groupSize} Guests</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={8}
+                    value={groupSize}
+                    onChange={(e) => setGroupSize(Number(e.target.value))}
+                    className="w-full h-2.5 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-stone-500 mt-1">
+                    <span>1 (Solo)</span>
+                    <span>8 (Large Party)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Savings Impact Badges */}
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="bg-stone-900/80 border border-white/10 p-5 rounded-2xl flex flex-col justify-center items-center space-y-1">
+                  <Timer className="w-6 h-6 text-amber-400 mb-1" />
+                  <div className="font-display font-black text-2xl text-white">25 Mins</div>
+                  <div className="text-[11px] text-stone-400">Average Wait Saved Per Visit</div>
+                </div>
+
+                <div className="bg-stone-900/80 border border-white/10 p-5 rounded-2xl flex flex-col justify-center items-center space-y-1">
+                  <Smile className="w-6 h-6 text-emerald-400 mb-1" />
+                  <div className="font-display font-black text-2xl text-emerald-400">98%</div>
+                  <div className="text-[11px] text-stone-400">Wait Anxiety Reduction</div>
+                </div>
+
+                <div className="bg-stone-900/80 border border-white/10 p-5 rounded-2xl flex flex-col justify-center items-center space-y-1 col-span-2">
+                  <Zap className="w-6 h-6 text-orange-400 mb-1" />
+                  <div className="font-display font-black text-xl text-white">+25% Faster Table Turnover</div>
+                  <div className="text-[11px] text-stone-400">Restaurants seat guests instantly with WhatsApp notifications</div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -290,6 +406,60 @@ export default function HomePage() {
                 <div className="text-xs text-stone-400 font-medium">{m.label}</div>
               </div>
             ))}
+          </section>
+
+          {/* ────────────────────────── 3-STEP INTERACTIVE GUEST JOURNEY ────────────────────────── */}
+          <section className="space-y-8 pt-4">
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <span className="text-xs font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 px-3.5 py-1 rounded-full border border-amber-700/60 inline-flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-amber-400" /> Effortless Experience
+              </span>
+              <h2 className="font-display text-3xl sm:text-4xl font-black text-white">
+                How Smart Waitlist Works in 3 Simple Steps
+              </h2>
+              <p className="text-stone-400 text-sm">
+                No app installation needed. Designed for maximum guest comfort & dining speed.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  step: '01',
+                  title: 'Scan QR or Search Restaurant',
+                  desc: 'Scan the standee QR code at the restaurant host desk or search online to join the live waitlist in seconds.',
+                  icon: QrCode,
+                },
+                {
+                  step: '02',
+                  title: 'Live WhatsApp Updates & Pre-Orders',
+                  desc: 'Receive real-time position alerts on WhatsApp while browsing the menu and pre-ordering dishes.',
+                  icon: MessageCircle,
+                },
+                {
+                  step: '03',
+                  title: 'Walk Right In & Enjoy Seating',
+                  desc: 'Your table is prepared and ready. Walk straight to your assigned table with pre-ordered food served hot!',
+                  icon: CheckCircle2,
+                },
+              ].map((s) => (
+                <div
+                  key={s.step}
+                  className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-7 rounded-3xl space-y-4 relative shadow-xl hover:border-amber-500/40 transition group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-display font-black text-3xl text-amber-500/40">{s.step}</span>
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                      <s.icon className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <h3 className="font-display font-bold text-lg text-white group-hover:text-amber-300 transition">
+                    {s.title}
+                  </h3>
+                  <p className="text-xs text-stone-300 leading-relaxed font-light">{s.desc}</p>
+                </div>
+              ))}
+            </div>
           </section>
 
           {/* ────────────────────────── 3D GLASS FEATURES SHOWCASE ────────────────────────── */}
@@ -509,7 +679,7 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* Tier 2: Pro Restaurant (POPULAR - Highlighted Glass) */}
+              {/* Tier 2: Pro Restaurant */}
               <div className="bg-gradient-to-b from-orange-500/20 via-amber-500/10 to-stone-900/90 backdrop-blur-2xl border-2 border-orange-500/60 rounded-3xl p-8 space-y-6 flex flex-col justify-between transition duration-300 hover:-translate-y-1.5 shadow-2xl shadow-orange-500/15 relative">
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-stone-950 font-black text-[10px] uppercase tracking-widest px-4 py-1 rounded-full shadow-lg flex items-center gap-1">
                   <Crown className="w-3 h-3 fill-stone-950" /> Most Popular Choice
@@ -675,24 +845,46 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Restaurant Search Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/10 pb-4 pt-4">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold font-display text-white">
-                  Partner Restaurants ({processedRestaurants.length})
-                </h2>
-                <p className="text-xs text-stone-400">Scan QR Code or tap to join waitlist & pre-order dishes</p>
+            {/* Restaurant Search Bar & Cuisine Pills */}
+            <div className="space-y-4 border-b border-white/10 pb-4 pt-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-bold font-display text-white">
+                    Partner Restaurants ({processedRestaurants.length})
+                  </h2>
+                  <p className="text-xs text-stone-400">Scan QR Code or tap to join waitlist & pre-order dishes</p>
+                </div>
+
+                <div className="relative max-w-xs w-full">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search restaurant, cuisine, location..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-stone-900 border border-white/10 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500 transition"
+                  />
+                </div>
               </div>
 
-              <div className="relative max-w-xs w-full">
-                <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  placeholder="Search restaurant, cuisine, location..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-stone-900 border border-white/10 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500 transition"
-                />
+              {/* Interactive Cuisine Quick Pills */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="text-xs font-bold text-stone-400 flex items-center gap-1 mr-2">
+                  <Filter className="w-3.5 h-3.5 text-amber-400" /> Filter Vibe:
+                </span>
+                {['All', 'Italian', 'Indian', 'Asian', 'Bakery', 'Roof-Top', 'Bar'].map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCuisineCategory(category)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                      selectedCuisineCategory === category
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 shadow-md scale-105'
+                        : 'bg-stone-900 hover:bg-stone-800 text-stone-300 border border-white/10'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -704,7 +896,7 @@ export default function HomePage() {
               </div>
             ) : processedRestaurants.length === 0 ? (
               <div className="bg-stone-900/60 border border-white/10 rounded-3xl p-12 text-center text-stone-400">
-                No restaurants found matching your search.
+                No restaurants found matching your search and category filters.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

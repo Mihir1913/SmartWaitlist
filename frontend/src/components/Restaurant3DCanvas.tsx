@@ -11,17 +11,19 @@ export interface Table3DData {
   waitTimeMins?: number;
   position: [number, number, number];
   zone: 'main' | 'vip' | 'bar' | 'terrace';
+  vibeTag: string;
+  popularDish: string;
 }
 
 const INITIAL_TABLES: Table3DData[] = [
-  { id: 't1', number: 1, name: 'Table 01', status: 'ready', capacity: 2, currentParty: 'Sharma (2)', waitTimeMins: 0, position: [-4.5, 0, -2], zone: 'main' },
-  { id: 't2', number: 2, name: 'Table 02', status: 'seated', capacity: 4, currentParty: 'Verma (4)', waitTimeMins: 12, position: [-1.5, 0, -3.5], zone: 'main' },
-  { id: 't3', number: 3, name: 'Table 03', status: 'available', capacity: 4, waitTimeMins: 0, position: [1.5, 0, -3.5], zone: 'main' },
-  { id: 't4', number: 4, name: 'Table 04', status: 'seated', capacity: 6, currentParty: 'Kapoor (5)', waitTimeMins: 25, position: [4.5, 0, -2], zone: 'main' },
-  { id: 't5', number: 5, name: 'VIP Booth 1', status: 'reserved', capacity: 8, currentParty: 'Mehta VIP', waitTimeMins: 5, position: [-5, 0, 2], zone: 'vip' },
-  { id: 't6', number: 6, name: 'Chef Counter A', status: 'ready', capacity: 2, currentParty: 'Rao (2)', waitTimeMins: 0, position: [-1.5, 0, 2.5], zone: 'bar' },
-  { id: 't7', number: 7, name: 'Chef Counter B', status: 'seated', capacity: 2, currentParty: 'Singhania (2)', waitTimeMins: 18, position: [1.5, 0, 2.5], zone: 'bar' },
-  { id: 't8', number: 8, name: 'Terrace Suite', status: 'available', capacity: 4, waitTimeMins: 0, position: [5, 0, 2], zone: 'terrace' },
+  { id: 't1', number: 1, name: 'Table 01', status: 'ready', capacity: 2, currentParty: 'Sharma (2)', waitTimeMins: 0, position: [-4.5, 0, -2], zone: 'main', vibeTag: 'Romantic Window View', popularDish: 'Woodfired Truffle Pizza' },
+  { id: 't2', number: 2, name: 'Table 02', status: 'seated', capacity: 4, currentParty: 'Verma (4)', waitTimeMins: 12, position: [-1.5, 0, -3.5], zone: 'main', vibeTag: 'Cozy Family Booth', popularDish: 'Charcoal Grilled Tikka' },
+  { id: 't3', number: 3, name: 'Table 03', status: 'available', capacity: 4, waitTimeMins: 0, position: [1.5, 0, -3.5], zone: 'main', vibeTag: 'Central Lounge', popularDish: 'Artisanal Mocktail' },
+  { id: 't4', number: 4, name: 'Table 04', status: 'seated', capacity: 6, currentParty: 'Kapoor (5)', waitTimeMins: 25, position: [4.5, 0, -2], zone: 'main', vibeTag: 'Grand Feast Table', popularDish: 'Smoked Butter Chicken' },
+  { id: 't5', number: 5, name: 'VIP Booth 1', status: 'reserved', capacity: 8, currentParty: 'Mehta VIP', waitTimeMins: 5, position: [-5, 0, 2], zone: 'vip', vibeTag: 'VIP Executive Lounge', popularDish: 'Lobster & Steak Platter' },
+  { id: 't6', number: 6, name: 'Chef Counter A', status: 'ready', capacity: 2, currentParty: 'Rao (2)', waitTimeMins: 0, position: [-1.5, 0, 2.5], zone: 'bar', vibeTag: "Chef's Omakase Bar", popularDish: 'Handrolled Sushi Roll' },
+  { id: 't7', number: 7, name: 'Chef Counter B', status: 'seated', capacity: 2, currentParty: 'Singhania (2)', waitTimeMins: 18, position: [1.5, 0, 2.5], zone: 'bar', vibeTag: 'Live Cocktail Station', popularDish: 'Smoked Bourbon Sour' },
+  { id: 't8', number: 8, name: 'Terrace Suite', status: 'available', capacity: 4, waitTimeMins: 0, position: [5, 0, 2], zone: 'terrace', vibeTag: 'Sunset Skyline View', popularDish: 'Truffle Pasta & Wine' },
 ];
 
 interface Props {
@@ -52,7 +54,7 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     // 1. SCENE & CAMERA
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.background = new THREE.Color(0x0a0908); // obsidian dark theme
+    scene.background = new THREE.Color(0x0a0908);
     scene.fog = new THREE.FogExp2(0x0a0908, 0.035);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
@@ -92,7 +94,7 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     goldRimLight.position.set(8, 6, -6);
     scene.add(goldRimLight);
 
-    // 4. FLOORS & LUXURY TILES
+    // 4. FLOORS
     const floorGeo = new THREE.PlaneGeometry(24, 18);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x141210,
@@ -105,12 +107,11 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Grid accent lines
     const grid = new THREE.GridHelper(24, 24, 0xf59e0b, 0x262420);
     grid.position.y = -0.49;
     scene.add(grid);
 
-    // 5. CENTER HOLOGRAM PODIUM (LIVE WAITLIST HUB)
+    // 5. CENTER HOLOGRAM PODIUM
     const podiumGroup = new THREE.Group();
 
     const baseGeo = new THREE.CylinderGeometry(1.2, 1.4, 0.4, 32);
@@ -120,7 +121,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     baseMesh.receiveShadow = true;
     podiumGroup.add(baseMesh);
 
-    // Glowing ring
     const ringGeo = new THREE.TorusGeometry(1.1, 0.04, 16, 64);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -128,7 +128,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     ringMesh.position.y = -0.08;
     podiumGroup.add(ringMesh);
 
-    // Floating Hologram Crystal
     const crystalGeo = new THREE.OctahedronGeometry(0.55, 0);
     const crystalMat = new THREE.MeshPhysicalMaterial({
       color: 0xf59e0b,
@@ -144,7 +143,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     crystalMesh.castShadow = true;
     podiumGroup.add(crystalMesh);
 
-    // Hologram light beam
     const beamGeo = new THREE.CylinderGeometry(0.8, 0.2, 2.5, 32, 1, true);
     const beamMat = new THREE.MeshBasicMaterial({
       color: 0xf59e0b,
@@ -158,20 +156,18 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
 
     scene.add(podiumGroup);
 
-    // 6. CREATING 3D TABLES & STATUS INDICATORS
+    // 6. CREATING 3D TABLES
     const createTable3D = (tableData: Table3DData) => {
       const group = new THREE.Group();
       group.position.set(...tableData.position);
       group.userData = { tableData };
 
-      // Table Top Color based on status
-      let accentColor = 0x10b981; // available (emerald)
-      if (tableData.status === 'seated') accentColor = 0x3b82f6; // seated (blue)
-      if (tableData.status === 'ready') accentColor = 0xf59e0b; // ready (amber)
-      if (tableData.status === 'reserved') accentColor = 0x8b5cf6; // reserved (purple)
-      if (tableData.status === 'cleaning') accentColor = 0xf43f5e; // cleaning (rose)
+      let accentColor = 0x10b981;
+      if (tableData.status === 'seated') accentColor = 0x3b82f6;
+      if (tableData.status === 'ready') accentColor = 0xf59e0b;
+      if (tableData.status === 'reserved') accentColor = 0x8b5cf6;
+      if (tableData.status === 'cleaning') accentColor = 0xf43f5e;
 
-      // Base Pedestal
       const pedestalGeo = new THREE.CylinderGeometry(0.12, 0.35, 1.0, 16);
       const pedestalMat = new THREE.MeshStandardMaterial({ color: 0x2b2621, metalness: 0.7, roughness: 0.3 });
       const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
@@ -179,7 +175,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       pedestal.castShadow = true;
       group.add(pedestal);
 
-      // Table Top Marble/Wood Surface
       const isLarge = tableData.capacity > 4;
       const topGeo = isLarge
         ? new THREE.BoxGeometry(1.8, 0.1, 1.1)
@@ -196,7 +191,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       topMesh.receiveShadow = true;
       group.add(topMesh);
 
-      // Glowing Rim Ring underneath table top
       const rimGeo = isLarge
         ? new THREE.BoxGeometry(1.84, 0.02, 1.14)
         : new THREE.CylinderGeometry(0.77, 0.77, 0.02, 32);
@@ -205,7 +199,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       rimMesh.position.y = 0.45;
       group.add(rimMesh);
 
-      // Chairs around table
       const chairCount = tableData.capacity;
       for (let i = 0; i < chairCount; i++) {
         const angle = (i / chairCount) * Math.PI * 2;
@@ -222,7 +215,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
         group.add(chair);
       }
 
-      // Cloche Plating / Wine Glasses on Table
       const clocheGeo = new THREE.SphereGeometry(0.18, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
       const clocheMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.1 });
       const cloche = new THREE.Mesh(clocheGeo, clocheMat);
@@ -230,7 +222,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       cloche.castShadow = true;
       group.add(cloche);
 
-      // Floating 3D Table Status Badge Plate
       const badgeGeo = new THREE.SphereGeometry(0.12, 16, 16);
       const badgeMat = new THREE.MeshBasicMaterial({ color: accentColor });
       const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
@@ -244,7 +235,7 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
 
     INITIAL_TABLES.forEach(createTable3D);
 
-    // 7. AMBIENT FLOATING EMBER / SMOKE PARTICLES
+    // 7. PARTICLES
     const particleCount = 120;
     const particleGeo = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
@@ -273,7 +264,7 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     const particleSystem = new THREE.Points(particleGeo, particleMat);
     scene.add(particleSystem);
 
-    // 8. RAYCASTING HOVER & CLICK HANDLERS
+    // 8. RAYCASTING
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -282,7 +273,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
-      // Parallax effect on camera target
       if (currentZone === 'all') {
         targetCamPosRef.current.x = mouse.x * 1.5;
         targetCamPosRef.current.z = 9.5 + mouse.y * 0.8;
@@ -323,8 +313,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
             const table = parent.userData.tableData as Table3DData;
             setSelectedTable(table);
             if (onSelectTable) onSelectTable(table);
-
-            // Animate camera look-at towards clicked table
             targetCamLookRef.current.set(table.position[0], 0.5, table.position[2]);
             return;
           }
@@ -344,30 +332,25 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       animationFrameId = requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
 
-      // Rotate hologram crystal & pulse beam
       crystalMesh.rotation.y = elapsedTime * 0.8;
       crystalMesh.rotation.x = Math.sin(elapsedTime * 0.5) * 0.2;
       crystalMesh.position.y = 0.65 + Math.sin(elapsedTime * 2) * 0.08;
 
-      // Animate table status badges hover floating
       tableGroupMapRef.current.forEach((grp, id) => {
         const badge = grp.getObjectByName('statusBadge');
         if (badge) {
           badge.position.y = 1.25 + Math.sin(elapsedTime * 3 + grp.position.x) * 0.06;
         }
-        // Slight hover scale effect if hovered
         const isHovered = hoveredTable?.id === id;
         const targetScale = isHovered ? 1.12 : 1.0;
         grp.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
       });
 
-      // Animate floating particles upward
       const positions = particleGeo.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
         positions[i * 3 + 1] += particleVelocities[i].y;
         positions[i * 3] += particleVelocities[i].x;
 
-        // Reset if particle moves out of range
         if (positions[i * 3 + 1] > 8) {
           positions[i * 3 + 1] = 0;
           positions[i * 3] = (Math.random() - 0.5) * 20;
@@ -376,7 +359,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       }
       particleGeo.attributes.position.needsUpdate = true;
 
-      // Smooth camera interpolation
       camera.position.lerp(targetCamPosRef.current, 0.05);
       currentCamLookRef.current.lerp(targetCamLookRef.current, 0.05);
       camera.lookAt(currentCamLookRef.current);
@@ -386,7 +368,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
 
     animate();
 
-    // 10. RESIZE HANDLER
     const handleResize = () => {
       if (!container) return;
       const w = container.clientWidth;
@@ -398,7 +379,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
 
     window.addEventListener('resize', handleResize);
 
-    // CLEANUP
     return () => {
       cancelAnimationFrame(animationFrameId);
       container.removeEventListener('mousemove', handlePointerMove);
@@ -409,7 +389,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     };
   }, []);
 
-  // ZONE CAMERA SWITCHING
   const handleZoneChange = (zone: 'all' | 'main' | 'vip' | 'bar' | 'terrace') => {
     setCurrentZone(zone);
     if (!cameraRef.current) return;
@@ -432,6 +411,8 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
     }
   };
 
+  const activeTable = hoveredTable || selectedTable;
+
   return (
     <div className="relative w-full h-[520px] sm:h-[620px] rounded-3xl overflow-hidden border border-amber-500/30 bg-stone-950 shadow-2xl shadow-amber-950/40 group">
       {/* 3D Canvas Mount Point */}
@@ -447,7 +428,6 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
           </div>
         </div>
 
-        {/* Live Counter Badge */}
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-stone-950 px-4 py-2 rounded-2xl font-black text-xs shadow-xl flex items-center gap-2 pointer-events-auto">
           <span className="w-2 h-2 rounded-full bg-stone-950 animate-pulse" />
           <span>{activeQueueCount} Guests Waiting Live</span>
@@ -478,49 +458,59 @@ export default function Restaurant3DCanvas({ onSelectTable, activeQueueCount = 8
       </div>
 
       {/* Selected / Hovered Table Floating Glass Inspector Card */}
-      {(hoveredTable || selectedTable) && (
+      {activeTable && (
         <div className="absolute top-20 right-4 w-72 bg-stone-900/90 backdrop-blur-2xl border border-amber-500/40 p-4 rounded-2xl shadow-2xl text-white space-y-3 z-10 animate-in fade-in slide-in-from-right-4 duration-200">
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                {(hoveredTable || selectedTable)?.zone.toUpperCase()} ZONE
+                {activeTable.zone.toUpperCase()} ZONE • {activeTable.vibeTag}
               </span>
-              <h4 className="font-display font-extrabold text-base">{(hoveredTable || selectedTable)?.name}</h4>
+              <h4 className="font-display font-extrabold text-base">{activeTable.name}</h4>
             </div>
 
             <span
               className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border ${
-                (hoveredTable || selectedTable)?.status === 'ready'
+                activeTable.status === 'ready'
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                  : (hoveredTable || selectedTable)?.status === 'seated'
+                  : activeTable.status === 'seated'
                   ? 'bg-blue-500/20 text-blue-400 border-blue-500/40'
-                  : (hoveredTable || selectedTable)?.status === 'reserved'
+                  : activeTable.status === 'reserved'
                   ? 'bg-purple-500/20 text-purple-400 border-purple-500/40'
                   : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
               }`}
             >
-              {(hoveredTable || selectedTable)?.status}
+              {activeTable.status}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-white/5 p-2 rounded-xl">
               <div className="text-[10px] text-stone-400">Capacity</div>
-              <div className="font-bold text-stone-200">{(hoveredTable || selectedTable)?.capacity} Guests</div>
+              <div className="font-bold text-stone-200">{activeTable.capacity} Guests</div>
             </div>
             <div className="bg-white/5 p-2 rounded-xl">
               <div className="text-[10px] text-stone-400">Current Party</div>
-              <div className="font-bold text-amber-300">{(hoveredTable || selectedTable)?.currentParty || 'None'}</div>
+              <div className="font-bold text-amber-300">{activeTable.currentParty || 'Available'}</div>
             </div>
           </div>
 
-          <div className="text-[11px] text-stone-400 italic bg-amber-950/30 p-2 rounded-xl border border-amber-800/30 text-center">
-            💡 Click on any 3D table to focus camera & view real-time seating updates.
+          <div className="bg-amber-950/40 p-2.5 rounded-xl border border-amber-800/40 text-xs space-y-1">
+            <div className="text-[10px] text-amber-400 font-bold uppercase">Popular Pre-Order Dish</div>
+            <div className="font-medium text-stone-200">✨ {activeTable.popularDish}</div>
           </div>
+
+          <button
+            onClick={() => {
+              if (onSelectTable) onSelectTable(activeTable);
+            }}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-stone-950 font-black text-xs transition shadow-md active:scale-95"
+          >
+            Join Queue For {activeTable.name}
+          </button>
         </div>
       )}
 
-      {/* Ambient Canvas Lighting Accent */}
+      {/* Ambient Canvas Accent */}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-stone-950 via-transparent to-stone-950/60" />
     </div>
   );
