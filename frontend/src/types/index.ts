@@ -42,11 +42,27 @@ export interface SuperAdminRestaurant {
   owners: { id: string; name: string; email: string }[];
 }
 
+export interface PartnerInquiry {
+  _id: string;
+  restaurantName: string;
+  ownerName: string;
+  phone: string;
+  email: string;
+  city: string;
+  dailyFootfall?: string;
+  notes?: string;
+  status: 'pending' | 'contacted' | 'approved';
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface SuperAdminStats {
   totalRestaurants: number;
   totalActiveQueues: number;
   totalTables: number;
   totalUsers: number;
+  totalInquiries?: number;
+  pendingInquiries?: number;
 }
 
 export interface QueueEntry {

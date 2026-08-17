@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import type { SuperAdminRestaurant, SuperAdminStats, AuditLog } from '../types';
+import type { SuperAdminRestaurant, SuperAdminStats, AuditLog, PartnerInquiry } from '../types';
 import QRCodeModal from '../components/QRCodeModal';
 import {
   Store,
@@ -25,6 +25,11 @@ import {
   Layers,
   Settings,
   QrCode,
+  MessageSquare,
+  Filter,
+  Mail,
+  Check,
+  Send,
 } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
@@ -34,8 +39,11 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'restaurants' | 'audit'>('restaurants');
+  const [activeTab, setActiveTab] = useState<'restaurants' | 'inquiries' | 'audit'>('restaurants');
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [inquiries, setInquiries] = useState<PartnerInquiry[]>([]);
+  const [inquiryFilterStatus, setInquiryFilterStatus] = useState<string>('all');
+  const [inquirySearch, setInquirySearch] = useState<string>('');
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -93,8 +101,22 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const fetchInquiries = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await api.getSuperAdminInquiries();
+      setInquiries(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load inquiries');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchRestaurants();
+    api.getSuperAdminInquiries().then(setInquiries).catch(() => {});
   }, []);
 
   const fetchAuditLogs = async () => {
@@ -111,12 +133,57 @@ export default function SuperAdminDashboard() {
   };
 
   useEffect(() => {
-    if (activeTab === 'audit') {
+    if (activeTab === 'inquiries') {
+      fetchInquiries();
+    } else if (activeTab === 'audit') {
       fetchAuditLogs();
     } else {
       fetchRestaurants();
     }
   }, [activeTab]);
+
+  const handleUpdateInquiryStatus = async (id: string, newStatus: 'pending' | 'contacted' | 'approved') => {
+    try {
+      await api.updateInquiryStatus(id, newStatus);
+      setInquiries((prev) =>
+        prev.map((item) => (item._id === id ? { ...item, status: newStatus } : item))
+      );
+      setSuccessMsg('Inquiry status updated successfully!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update inquiry status');
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string, restaurantName: string) => {
+    if (!confirm(`Are you sure you want to delete inquiry for "${restaurantName}"?`)) return;
+    try {
+      await api.deleteInquiry(id);
+      setInquiries((prev) => prev.filter((item) => item._id !== id));
+      setSuccessMsg(`Deleted inquiry for "${restaurantName}"`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete inquiry');
+    }
+  };
+
+  const handleConvertInquiryToRestaurant = (inquiry: PartnerInquiry) => {
+    resetCreateForm();
+    setName(inquiry.restaurantName);
+    const autoSlug = inquiry.restaurantName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+    setSlug(autoSlug);
+    setAddress(inquiry.city);
+    setWhatsappPhone(inquiry.phone);
+    setCreateOwner(true);
+    setOwnerName(inquiry.ownerName);
+    setOwnerEmail(inquiry.email);
+    setShowAddModal(true);
+    handleUpdateInquiryStatus(inquiry._id, 'approved');
+  };
 
   // Auto-generate slug from name in creation modal
   const handleNameChange = (val: string) => {
@@ -361,8 +428,33 @@ export default function SuperAdminDashboard() {
           </div>
         )}
 
+        {/* Pending Inquiry Alert Banner */}
+        {inquiries.filter((i) => i.status === 'pending').length > 0 && (
+          <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/30 text-amber-200 px-5 py-4 rounded-2xl flex items-center justify-between gap-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/30 text-amber-300 flex items-center justify-center font-bold">
+                📩
+              </div>
+              <div>
+                <p className="font-bold text-white text-sm">
+                  {inquiries.filter((i) => i.status === 'pending').length} New Partner Inquiry Submission{inquiries.filter((i) => i.status === 'pending').length > 1 ? 's' : ''}!
+                </p>
+                <p className="text-xs text-amber-300/80">
+                  Prospective restaurant partners filled out the home screen inquiry form.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab('inquiries')}
+              className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs px-4 py-2 rounded-xl transition whitespace-nowrap shadow"
+            >
+              View Inquiries →
+            </button>
+          </div>
+        )}
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-stone-800/60 border border-stone-700/60 rounded-2xl p-5 backdrop-blur">
             <div className="flex items-center justify-between text-stone-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Restaurants</span>
@@ -372,6 +464,29 @@ export default function SuperAdminDashboard() {
               {stats?.totalRestaurants ?? restaurants.length}
             </div>
             <p className="text-xs text-stone-400 mt-1">Active platform instances</p>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('inquiries')}
+            className="bg-stone-800/60 border border-stone-700/60 hover:border-amber-500/50 rounded-2xl p-5 backdrop-blur cursor-pointer transition group"
+          >
+            <div className="flex items-center justify-between text-stone-400 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider group-hover:text-amber-400 transition">
+                Total Inquiries
+              </span>
+              <MessageSquare className="w-5 h-5 text-blue-400 group-hover:scale-110 transition" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-3xl font-extrabold text-white">
+                {stats?.totalInquiries ?? inquiries.length}
+              </div>
+              {inquiries.filter((i) => i.status === 'pending').length > 0 && (
+                <span className="bg-amber-500/20 text-amber-400 text-[11px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+                  {inquiries.filter((i) => i.status === 'pending').length} new
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-stone-400 mt-1">Form submissions</p>
           </div>
 
           <div className="bg-stone-800/60 border border-stone-700/60 rounded-2xl p-5 backdrop-blur">
@@ -399,7 +514,7 @@ export default function SuperAdminDashboard() {
           <div className="bg-stone-800/60 border border-stone-700/60 rounded-2xl p-5 backdrop-blur">
             <div className="flex items-center justify-between text-stone-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Platform Users</span>
-              <Users className="w-5 h-5 text-blue-400" />
+              <Users className="w-5 h-5 text-purple-400" />
             </div>
             <div className="text-3xl font-extrabold text-white">
               {stats?.totalUsers ?? 0}
@@ -424,6 +539,28 @@ export default function SuperAdminDashboard() {
             )}
           </button>
           <button
+            onClick={() => setActiveTab('inquiries')}
+            className={`pb-3 text-sm font-semibold transition relative flex items-center gap-2 ${
+              activeTab === 'inquiries'
+                ? 'text-amber-400'
+                : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            Partner Inquiries
+            {inquiries.filter((i) => i.status === 'pending').length > 0 ? (
+              <span className="bg-amber-500 text-stone-950 font-extrabold text-[10px] px-1.5 py-0.2 rounded-full animate-pulse">
+                {inquiries.filter((i) => i.status === 'pending').length}
+              </span>
+            ) : inquiries.length > 0 ? (
+              <span className="bg-stone-800 text-stone-300 font-medium text-[10px] px-2 py-0.5 rounded-full border border-stone-700">
+                {inquiries.length}
+              </span>
+            ) : null}
+            {activeTab === 'inquiries' && (
+              <span className="absolute bottom-[-2px] left-0 w-full h-0.5 bg-amber-400 rounded-t-md" />
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('audit')}
             className={`pb-3 text-sm font-semibold transition relative ${
               activeTab === 'audit'
@@ -438,7 +575,215 @@ export default function SuperAdminDashboard() {
           </button>
         </div>
 
-        {activeTab === 'restaurants' ? (
+        {activeTab === 'inquiries' ? (
+          <div className="space-y-6">
+            {/* Header & Search/Filters */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <input
+                  type="text"
+                  placeholder="Search inquiries by restaurant, owner, email, city..."
+                  value={inquirySearch}
+                  onChange={(e) => setInquirySearch(e.target.value)}
+                  className="w-full bg-stone-800/80 border border-stone-700 text-white rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Filter className="w-4 h-4 text-stone-400" />
+                <select
+                  value={inquiryFilterStatus}
+                  onChange={(e) => setInquiryFilterStatus(e.target.value)}
+                  className="bg-stone-800 border border-stone-700 text-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
+                >
+                  <option value="all">All Inquiries ({inquiries.length})</option>
+                  <option value="pending">Pending Review ({inquiries.filter((i) => i.status === 'pending').length})</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="approved">Approved</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Inquiries Grid */}
+            <div className="bg-stone-800/40 border border-stone-800 rounded-2xl overflow-hidden backdrop-blur">
+              {loading ? (
+                <div className="p-12 text-center text-stone-400">
+                  <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                  Loading partner inquiries...
+                </div>
+              ) : inquiries.filter((inq) => {
+                  const matchesStatus = inquiryFilterStatus === 'all' || inq.status === inquiryFilterStatus;
+                  const q = inquirySearch.toLowerCase();
+                  const matchesQuery =
+                    !q ||
+                    inq.restaurantName.toLowerCase().includes(q) ||
+                    inq.ownerName.toLowerCase().includes(q) ||
+                    inq.email.toLowerCase().includes(q) ||
+                    inq.phone.includes(q) ||
+                    inq.city.toLowerCase().includes(q);
+                  return matchesStatus && matchesQuery;
+                }).length === 0 ? (
+                <div className="p-12 text-center">
+                  <MessageSquare className="w-12 h-12 text-stone-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-stone-300">No partner inquiries found</h3>
+                  <p className="text-sm text-stone-500 mt-1 max-w-md mx-auto">
+                    {inquirySearch || inquiryFilterStatus !== 'all'
+                      ? 'No inquiries match your active search or filter.'
+                      : 'When visitors fill out the Inquire Form on the Home Screen, their details will instantly appear here.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {inquiries
+                    .filter((inq) => {
+                      const matchesStatus = inquiryFilterStatus === 'all' || inq.status === inquiryFilterStatus;
+                      const q = inquirySearch.toLowerCase();
+                      const matchesQuery =
+                        !q ||
+                        inq.restaurantName.toLowerCase().includes(q) ||
+                        inq.ownerName.toLowerCase().includes(q) ||
+                        inq.email.toLowerCase().includes(q) ||
+                        inq.phone.includes(q) ||
+                        inq.city.toLowerCase().includes(q);
+                      return matchesStatus && matchesQuery;
+                    })
+                    .map((inq) => {
+                      const cleanPhone = inq.phone.replace(/[^0-9]/g, '');
+                      const statusColor =
+                        inq.status === 'pending'
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : inq.status === 'contacted'
+                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+
+                      return (
+                        <div
+                          key={inq._id}
+                          className="bg-stone-900/90 border border-stone-800 rounded-2xl p-5 shadow-xl hover:border-stone-700 transition flex flex-col justify-between space-y-4"
+                        >
+                          {/* Header */}
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-bold text-white text-lg font-display tracking-tight leading-snug">
+                                {inq.restaurantName}
+                              </h3>
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize shrink-0 ${statusColor}`}
+                              >
+                                {inq.status}
+                              </span>
+                            </div>
+                            <div className="text-xs text-stone-400 flex items-center gap-2 flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                                {inq.city}
+                              </span>
+                              <span className="text-stone-600">•</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-stone-500" />
+                                {new Date(inq.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Contact Info Card */}
+                          <div className="bg-stone-950/60 rounded-xl p-3.5 border border-stone-800/80 space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-stone-400 font-medium">Owner Name:</span>
+                              <span className="font-semibold text-stone-200">{inq.ownerName}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-stone-400 font-medium">Phone:</span>
+                              <a
+                                href={`tel:${inq.phone}`}
+                                className="font-mono text-amber-400 hover:underline flex items-center gap-1"
+                              >
+                                <Phone className="w-3 h-3 text-amber-500" /> {inq.phone}
+                              </a>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-stone-400 font-medium">Email:</span>
+                              <a
+                                href={`mailto:${inq.email}`}
+                                className="text-stone-300 hover:text-white hover:underline truncate max-w-[170px]"
+                                title={inq.email}
+                              >
+                                {inq.email}
+                              </a>
+                            </div>
+                            {inq.dailyFootfall && (
+                              <div className="flex items-center justify-between pt-1.5 border-t border-stone-800/80">
+                                <span className="text-stone-400 font-medium">Daily Footfall:</span>
+                                <span className="font-bold text-emerald-400">{inq.dailyFootfall}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Notes */}
+                          {inq.notes && (
+                            <div className="text-xs text-stone-300 bg-stone-800/40 p-2.5 rounded-xl border border-stone-800/80 italic">
+                              "{inq.notes}"
+                            </div>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div className="space-y-3 pt-2 border-t border-stone-800">
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}?text=${encodeURIComponent(`Hello ${inq.ownerName}, I am reaching out regarding your inquiry for ${inq.restaurantName} on SmartWaitlist.`)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-semibold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+                              </a>
+                              
+                              <button
+                                onClick={() => handleConvertInquiryToRestaurant(inq)}
+                                className="flex-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
+                                title="Pre-fill & Setup Restaurant Profile"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Create Restaurant
+                              </button>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 pt-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-stone-400">Status:</span>
+                                <select
+                                  value={inq.status}
+                                  onChange={(e) =>
+                                    handleUpdateInquiryStatus(
+                                      inq._id,
+                                      e.target.value as 'pending' | 'contacted' | 'approved'
+                                    )
+                                  }
+                                  className="bg-stone-800 border border-stone-700 text-stone-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="contacted">Contacted</option>
+                                  <option value="approved">Approved</option>
+                                </select>
+                              </div>
+
+                              <button
+                                onClick={() => handleDeleteInquiry(inq._id, inq.restaurantName)}
+                                className="p-1.5 text-stone-500 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition"
+                                title="Delete Inquiry"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : activeTab === 'restaurants' ? (
           <>
             {/* Action Header & Search Bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">

@@ -335,6 +335,20 @@ export const api = {
 
   getAuditLogs: () => request<any[]>('/superadmin/audit-logs'),
 
+  getSuperAdminInquiries: () =>
+    request<import('../types').PartnerInquiry[]>('/superadmin/inquiries'),
+
+  updateInquiryStatus: (id: string, status: 'pending' | 'contacted' | 'approved') =>
+    request<{ message: string; inquiry: any }>(`/superadmin/inquiries/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+
+  deleteInquiry: (id: string) =>
+    request<{ message: string }>(`/superadmin/inquiries/${id}`, {
+      method: 'DELETE',
+    }),
+
   wipeAllRestaurants: () =>
     request<{ message: string }>('/superadmin/wipe-restaurants', {
       method: 'POST',

@@ -9,6 +9,7 @@ import { QueueEntry } from '../models/QueueEntry.js';
 import { MenuCategory, MenuItem } from '../models/Menu.js';
 import { Order } from '../models/Order.js';
 import { AuditLog } from '../models/AuditLog.js';
+import { Inquiry } from '../models/Inquiry.js';
 const router = Router();
 // Protect all superadmin routes
 router.use(authMiddleware, requireRole('superadmin'));
@@ -72,11 +73,18 @@ router.get('/restaurants', async (req, res) => {
                 owners: owners.map((o) => ({ id: o._id, name: o.name, email: o.email })),
             };
         }));
+        const [totalUsers, totalInquiries, pendingInquiries] = await Promise.all([
+            User.countDocuments(),
+            Inquiry.countDocuments(),
+            Inquiry.countDocuments({ status: 'pending' }),
+        ]);
         const platformStats = {
             totalRestaurants: restaurants.length,
             totalActiveQueues: restaurantData.reduce((acc, curr) => acc + curr.activeQueueCount, 0),
             totalTables: restaurantData.reduce((acc, curr) => acc + curr.tableCount, 0),
-            totalUsers: await User.countDocuments(),
+            totalUsers,
+            totalInquiries,
+            pendingInquiries,
         };
         res.json({ restaurants: restaurantData, stats: platformStats });
     }
@@ -290,6 +298,51 @@ router.get('/audit-logs', async (req, res) => {
     catch (err) {
         console.error('Superadmin get audit logs error:', err);
         res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+});
+// GET /api/superadmin/inquiries - List all partner inquiries
+router.get('/inquiries', async (req, res) => {
+    try {
+        const inquiries = await Inquiry.find().sort({ createdAt: -1 });
+        res.json(inquiries);
+    }
+    catch (err) {
+        console.error('Superadmin get inquiries error:', err);
+        res.status(500).json({ error: 'Failed to fetch inquiries' });
+    }
+});
+// PATCH /api/superadmin/inquiries/:id/status - Update inquiry status
+router.patch('/inquiries/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        if (!['pending', 'contacted', 'approved'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+        const inquiry = await Inquiry.findByIdAndUpdate(id, { status }, { new: true });
+        if (!inquiry) {
+            return res.status(404).json({ error: 'Inquiry not found' });
+        }
+        res.json({ message: 'Inquiry status updated successfully', inquiry });
+    }
+    catch (err) {
+        console.error('Superadmin update inquiry status error:', err);
+        res.status(500).json({ error: 'Failed to update inquiry status' });
+    }
+});
+// DELETE /api/superadmin/inquiries/:id - Delete an inquiry
+router.delete('/inquiries/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const inquiry = await Inquiry.findByIdAndDelete(id);
+        if (!inquiry) {
+            return res.status(404).json({ error: 'Inquiry not found' });
+        }
+        res.json({ message: 'Inquiry deleted successfully' });
+    }
+    catch (err) {
+        console.error('Superadmin delete inquiry error:', err);
+        res.status(500).json({ error: 'Failed to delete inquiry' });
     }
 });
 export default router;
