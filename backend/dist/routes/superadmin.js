@@ -110,6 +110,18 @@ router.post('/restaurants', async (req, res) => {
                 preOrderEnabled: true,
             },
         });
+        // Auto-create initial default tables T1-T8 for the new restaurant
+        const initialTables = [
+            { restaurantId: restaurant._id, number: 'T1', capacity: 2, status: 'available' },
+            { restaurantId: restaurant._id, number: 'T2', capacity: 2, status: 'available' },
+            { restaurantId: restaurant._id, number: 'T3', capacity: 4, status: 'available' },
+            { restaurantId: restaurant._id, number: 'T4', capacity: 4, status: 'available' },
+            { restaurantId: restaurant._id, number: 'T5', capacity: 4, status: 'available' },
+            { restaurantId: restaurant._id, number: 'T6', capacity: 6, status: 'available' },
+            { restaurantId: restaurant._id, number: 'T7', capacity: 6, status: 'available' },
+            { restaurantId: restaurant._id, number: 'T8', capacity: 8, status: 'available' },
+        ];
+        await Table.insertMany(initialTables);
         let ownerUser = null;
         if (payload.owner) {
             const hashedPassword = await bcrypt.hash(payload.owner.password, 10);

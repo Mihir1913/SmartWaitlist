@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { User } from '../models/User.js';
 import { config } from '../config/index.js';
 import { runSeed, clearDummyData } from '../services/seedService.js';
+import { authMiddleware, requireRole } from '../middleware/auth.js';
 const router = Router();
 const loginSchema = z.object({
     email: z.string().email(),
@@ -40,7 +41,7 @@ router.post('/login', async (req, res) => {
     }
 });
 // Endpoint to trigger initial seed (useful for production deployment)
-router.all('/seed', async (req, res) => {
+router.all('/seed', authMiddleware, requireRole('superadmin'), async (req, res) => {
     try {
         const force = req.query.force === 'true' || req.body?.force === true;
         await runSeed(force);
@@ -54,7 +55,7 @@ router.all('/seed', async (req, res) => {
     }
 });
 // Endpoint to wipe dummy queue entries, orders, and reset table statuses
-router.all('/clear-dummy', async (req, res) => {
+router.all('/clear-dummy', authMiddleware, requireRole('superadmin'), async (req, res) => {
     try {
         await clearDummyData();
         res.json({ message: 'All dummy waitlist entries and orders cleared cleanly!' });

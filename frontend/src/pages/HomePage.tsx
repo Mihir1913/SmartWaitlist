@@ -249,9 +249,9 @@ export default function HomePage() {
           {/* ────────────────────────── METRICS COUNTER ────────────────────────── */}
           <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Active Restaurants', value: stats.totalRestaurants || restaurants.length, icon: Building2, color: 'text-amber-500' },
-              { label: 'Guests Waiting Now', value: stats.totalQueues, icon: Users, color: 'text-orange-500' },
-              { label: 'Tables Seated Today', value: stats.totalSeated || 24, icon: Armchair, color: 'text-emerald-500' },
+              { label: 'Active Restaurants', value: stats.totalRestaurants ?? restaurants.length, icon: Building2, color: 'text-amber-500' },
+              { label: 'Guests Waiting Now', value: stats.totalQueues ?? 0, icon: Users, color: 'text-orange-500' },
+              { label: 'Tables Seated Today', value: stats.totalSeated ?? 0, icon: Armchair, color: 'text-emerald-500' },
               { label: 'Avg Wait Saved', value: '14 Mins', icon: Clock, color: 'text-blue-500' },
             ].map((m) => (
               <div key={m.label} className="bg-white border border-stone-200/90 p-5 rounded-3xl shadow-sm text-center space-y-1 hover:border-brand-300 transition">
