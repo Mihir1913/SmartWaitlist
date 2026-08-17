@@ -199,10 +199,10 @@ export default function StaffPanel() {
 
   const { data: myRest } = useQuery({
     queryKey: ['myRestaurantStaffHeader', user?.restaurantId],
-    queryFn: () => api.getRestaurant('spice-garden'),
+    queryFn: () => api.getMyRestaurant().catch(() => null),
     enabled: !!user,
   });
-  const restaurantName = myRest?.restaurant?.name || 'Spice Garden';
+  const restaurantName = myRest?.restaurant?.name || 'Staff Panel';
 
   const { state, isLoading: stateLoading } = useRestaurantState((event) => {
     if (event === 'order:ready') {
@@ -235,10 +235,10 @@ export default function StaffPanel() {
 
   const { data: menuData } = useQuery({
     queryKey: ['staffPanelMenuData', user?.restaurantId],
-    queryFn: () => api.getRestaurant('spice-garden'),
+    queryFn: () => api.getOwnerMenu().catch(() => ({ categories: [], items: [] })),
     enabled: !!addDishesEntry,
   });
-  const menuCategories = menuData?.menu ?? [];
+  const menuCategories = menuData?.categories ?? [];
 
   const tables: Table[] = state?.tables ?? [];
   const queue: QueueEntry[] = state?.queue ?? [];
@@ -779,7 +779,7 @@ export default function StaffPanel() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {menuCategories.map((cat) => (
+              {menuCategories.map((cat: any) => (
                 <div key={cat._id} className="space-y-2">
                   <h4 className="font-bold text-xs text-stone-500 uppercase tracking-wider">{cat.name}</h4>
                   <div className="space-y-2">

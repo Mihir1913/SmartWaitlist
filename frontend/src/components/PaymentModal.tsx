@@ -15,6 +15,7 @@ import { api } from '../lib/api';
 interface PaymentModalProps {
   type: 'preorder' | 'deposit';
   amount: number;
+  restaurantName?: string;
   orderId?: string;
   queueEntryId?: string;
   onSuccess: (paymentId: string) => void;
@@ -24,6 +25,7 @@ interface PaymentModalProps {
 export default function PaymentModal({
   type,
   amount,
+  restaurantName = 'Smart Waitlist Partner',
   orderId,
   queueEntryId,
   onSuccess,
@@ -36,7 +38,6 @@ export default function PaymentModal({
 
   // Dynamic UPI Deep Link string
   const upiVpa = 'smartwaitlist@upi';
-  const restaurantName = 'Spice Garden Restaurant';
   const upiUri = `upi://pay?pa=${upiVpa}&pn=${encodeURIComponent(restaurantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(type === 'preorder' ? 'PreOrder Payment' : 'Queue Deposit')}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
 

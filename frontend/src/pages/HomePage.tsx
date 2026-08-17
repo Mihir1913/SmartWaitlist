@@ -364,7 +364,7 @@ export default function HomePage() {
                 {
                   quote: 'Smart Waitlist reduced our weekend walkaways by 40%. Guests love browsing and pre-ordering dishes on WhatsApp before seating!',
                   author: 'Chef Rajesh Kumar',
-                  title: 'Executive Chef, Spice Garden',
+                  title: 'Executive Chef, Fine Dining Partner',
                   avatarBg: 'bg-emerald-100 text-emerald-800',
                 },
               ].map((q, idx) => (

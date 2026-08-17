@@ -242,12 +242,12 @@ export default function KitchenDisplay() {
 
   const { data: menuData, refetch: refetchMenu } = useQuery({
     queryKey: ['restaurantMenuKds', restaurantId],
-    queryFn: () => api.getRestaurant('spice-garden'),
+    queryFn: () => (restaurantId ? api.getRestaurant(restaurantId) : api.getMyRestaurant()).catch(() => null),
   });
 
-  const restaurantName = menuData?.restaurant?.name || 'Spice Garden';
+  const restaurantName = menuData?.restaurant?.name || 'Kitchen Display';
 
-  const menuCategories = menuData?.menu ?? [];
+  const menuCategories = (menuData as any)?.menu ?? [];
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -425,7 +425,7 @@ export default function KitchenDisplay() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {menuCategories.map((cat) => (
+              {menuCategories.map((cat: any) => (
                 <div key={cat._id}>
                   <h4 className="font-bold text-xs uppercase text-stone-500 tracking-wider mb-2">{cat.name}</h4>
                   <div className="space-y-2">

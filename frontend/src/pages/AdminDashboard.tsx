@@ -91,10 +91,10 @@ export default function AdminDashboard() {
 
   const { data: myRest } = useQuery({
     queryKey: ['myRestaurantAdminHeader', user?.restaurantId],
-    queryFn: () => api.getMyRestaurant().catch(() => api.getRestaurant('spice-garden')),
+    queryFn: () => api.getMyRestaurant().catch(() => null),
     enabled: !!user,
   });
-  const currentRestaurantName = myRest?.restaurant?.name || 'Spice Garden';
+  const currentRestaurantName = myRest?.restaurant?.name || 'Restaurant Dashboard';
 
   const { state, isLoading } = useRestaurantState();
   const stats = state?.stats;
@@ -1469,23 +1469,7 @@ function ProfileTab() {
           setPreOrder(res.restaurant.settings?.preOrderEnabled ?? true);
         }
       })
-      .catch(() => {
-        // Fallback to spice-garden if no owner token
-        api.getRestaurant('spice-garden').then((res) => {
-          if (res.restaurant) {
-            setName(res.restaurant.name);
-            setSlug(res.restaurant.slug);
-            setAddress(res.restaurant.address);
-            setWhatsappPhone(res.restaurant.whatsappPhone || '');
-            setDescription(res.restaurant.description || '');
-            setOpeningHours(res.restaurant.openingHours || '11:00 AM - 11:00 PM');
-            setCuisine(res.restaurant.cuisine || 'Multi-Cuisine & Dining');
-            setAvgTurnover(res.restaurant.settings?.avgTurnoverMinutes || 45);
-            setMaxQueue(res.restaurant.settings?.maxQueueSize || 50);
-            setPreOrder(res.restaurant.settings?.preOrderEnabled ?? true);
-          }
-        }).catch(() => {});
-      });
+      .catch(() => {});
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -1544,7 +1528,7 @@ function ProfileTab() {
       {showQR && (
         <QRCodeModal
           restaurantName={name || 'Restaurant'}
-          slug={slug || 'spice-garden'}
+          slug={slug || ''}
           address={address}
           whatsappPhone={whatsappPhone}
           onClose={() => setShowQR(false)}
@@ -1585,7 +1569,7 @@ function ProfileTab() {
           <div className="bg-stone-900 p-3.5 rounded-xl border border-stone-800 text-stone-200 leading-relaxed space-y-1.5">
             <p className="font-bold text-emerald-400">Hello Rahul Sharma! 👋</p>
             <p>
-              You are successfully added to the queue at <strong className="text-white">{name || 'Spice Garden'}</strong>!
+              You are successfully added to the queue at <strong className="text-white">{name || 'Your Restaurant'}</strong>!
             </p>
             <p className="text-amber-300 font-semibold pt-1">
               📍 Position: #1 in line • Est Wait: ~12 Mins

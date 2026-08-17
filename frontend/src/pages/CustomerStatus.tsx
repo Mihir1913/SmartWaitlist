@@ -457,7 +457,7 @@ export default function CustomerStatus() {
 
         {showBillModal && order && (
           <BillReceiptModal
-            restaurantName={restaurantName || 'Spice Garden Fine Dining'}
+            restaurantName={restaurantName || 'Restaurant'}
             entry={entry}
             order={order}
             onClose={() => setShowBillModal(false)}
